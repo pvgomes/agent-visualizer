@@ -70,4 +70,12 @@ Keep them focused: one agent, one fix or one feature each. Fill in the template,
 
 ## Releasing
 
-agent-visualizer isn't published to npm: people install it straight from this repository (see the README), so whatever is on `main` is the release. Bump `version` in `package.json` when something worth noting changes.
+agent-visualizer is published to npm as [`@pvgomes/agent-visualizer`](https://www.npmjs.com/package/@pvgomes/agent-visualizer), so `npx @pvgomes/agent-visualizer` runs the latest release. To cut one from an up-to-date `main`:
+
+```sh
+npm version patch        # or minor / major: bumps package.json and tags vX.Y.Z
+npm publish              # prepack builds dist/; publishConfig makes it public
+git push --follow-tags
+```
+
+`npx @pvgomes/agent-visualizer install` registers agents with the exact version it ran as (`npx -y @pvgomes/agent-visualizer@X.Y.Z mcp`) and refuses until that version is on npm, so publish before announcing a release.

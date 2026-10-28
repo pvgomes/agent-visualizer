@@ -3,7 +3,7 @@
  * the office is kept recording in two staggered 20-second takes, so pressing
  * R right after a table flip saves the take that holds the last ~15 seconds.
  * Only the canvas is captured, never the chrome; the replay buffer burns a
- * caption for each big moment and a small "npx agent-visualizer" mark into its
+ * caption for each big moment and a small "npx @pvgomes/agent-visualizer" mark into its
  * own copy of the frame, so a clip explains itself when it's posted.
  */
 import { stamp } from "./format.ts";
@@ -239,7 +239,7 @@ export class ReplayBuffer {
     }
     // the mark: so a posted clip says where it came from
     g.font = `600 ${Math.round(15 * u)}px ui-monospace, "SF Mono", Menlo, monospace`;
-    const mark = "npx agent-visualizer";
+    const mark = "npx @pvgomes/agent-visualizer";
     const mw = g.measureText(mark).width;
     g.fillStyle = "rgba(8,8,12,0.6)";
     g.fillRect(c.width - mw - 34 * u, c.height - 40 * u, mw + 20 * u, 26 * u);

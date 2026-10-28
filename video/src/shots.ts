@@ -155,7 +155,7 @@ export function hook(dur: number, o: { line1At?: number; line2At?: number; outAt
   };
 }
 
-/** `$ npx agent-visualizer`, typed, Enter. */
+/** `$ npx @pvgomes/agent-visualizer`, typed, Enter. */
 export function command(dur: number, o: { typeAt?: number; enterAt?: number } = {}): Shot {
   const typeAt = o.typeAt ?? 0.25, enterAt = o.enterAt ?? dur - 0.4;
   // a human typist: slightly uneven gaps, deterministic

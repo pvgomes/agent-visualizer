@@ -39,9 +39,9 @@ export interface Chrome {
 }
 
 /** How to unlock, for the empty office. The page can't tell how the office was installed: npx works either way. */
-const LOCKED_HOW = "Locked in this browser: run npx agent-visualizer open where the office runs (--print for a link to paste here)";
+const LOCKED_HOW = "Locked in this browser: run npx @pvgomes/agent-visualizer open where the office runs (--print for a link to paste here)";
 /** The same, short enough for a toolbar tooltip or a toast. */
-const LOCKED_TIP = "Locked: run npx agent-visualizer open to unlock";
+const LOCKED_TIP = "Locked: run npx @pvgomes/agent-visualizer open to unlock";
 
 const REC_MS = 10_000;
 /** Height kept clear for the toast row under the top bar (desktop). */

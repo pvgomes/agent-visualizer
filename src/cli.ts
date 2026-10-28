@@ -1,5 +1,5 @@
 /*
- * `npx agent-visualizer`: parse flags, fill the state store from the transcript
+ * `npx @pvgomes/agent-visualizer`: parse flags, fill the state store from the transcript
  * watcher (or the demo), serve the office on localhost, print the banner and
  * open the browser. No dependencies: flags are parsed by hand and the colours
  * are raw ANSI, off for NO_COLOR and when stdout is not a terminal.
@@ -34,7 +34,7 @@ import { claudeSessionOf, startPresence } from "./control/presence.ts";
 import { createInstallApi } from "./control/install-api.ts";
 import { appCurrent, installService, serviceLogger, serviceStatus, setStartAtLogin, startService } from "./control/service.ts";
 import { canOpenBrowser, loginPath, openBrowser, serviceDeps, waitForOffice } from "./control/cli.ts";
-import { selfCommand } from "./install/command.ts";
+import { PACKAGE_NAME, selfCommand } from "./install/command.ts";
 import type { ServiceControl } from "./control/api.ts";
 import { controlSupported } from "./control/types.ts";
 import { join } from "node:path";
@@ -350,7 +350,7 @@ function logEvent(e: OfficeEvent): void {
 function readVersion(): string {
   try {
     const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-    if (pkg && (pkg.name === "agent-visualizer" || pkg.name === "agent-visualizer") && typeof pkg.version === "string") return pkg.version;
+    if (pkg && pkg.name === PACKAGE_NAME && typeof pkg.version === "string") return pkg.version;
   } catch {
     // Fall through: running from somewhere without the package.json beside it.
   }
@@ -379,8 +379,8 @@ function help(version: string): string {
 ${bold("agent-visualizer")} ${dim(`v${version}`)}  a live pixel-art office for your coding agents
 
 ${bold("Usage")}
-  npx agent-visualizer [office] [options]     open the office (the default command)
-  npx agent-visualizer <command> [options]    install | uninstall | doctor | mcp | open
+  npx @pvgomes/agent-visualizer [office] [options]     open the office (the default command)
+  npx @pvgomes/agent-visualizer <command> [options]    install | uninstall | doctor | mcp | open
 
 ${bold("Office options")}
   --port <n>, -p    Port to serve on (default ${DEFAULT_PORT}; tries the next ${PORT_FALLBACK} if taken)

@@ -45,7 +45,7 @@ const CHAT_STEPS = ["Open its chat", "Read the full command", "Press 1 to allow"
 const chatF = (step: number): Feature => ({ title: "In chat mode, approve with one key.", line: "", steps: CHAT_STEPS, step, accent: INK.green });
 
 export const F: Record<string, Feature> = {
-  one: { title: "One command.", line: "Run ‹npx agent-visualizer› and every agent you already use walks in.", accent: INK.cyan, logos: LINEUP },
+  one: { title: "One command.", line: "Run ‹npx @pvgomes/agent-visualizer› and every agent you already use walks in.", accent: INK.cyan, logos: LINEUP },
   lapse: { title: "The sandbox spins up.", line: "Daytona creates it, the office installs Command Code and copies your setup.", accent: INK.cyan, tag: "" },
   beam: { title: "It beams into the cloud wing.", line: "A pod of its own, under a Daytona sign, next to your other sandboxes.", accent: INK.cyan, logos: ["daytona", "vercel", "railway"] },
   diff: { title: "See every change.", line: "The work log keeps each tool call, with the diff of every edit.", accent: INK.violet },
@@ -269,7 +269,7 @@ function privacyShot(dur: number): Shot {
 /** Three steps, then the end card. */
 function howTo(dur: number): Shot {
   const steps: [string, string, string][] = [
-    ["1", "npx agent-visualizer", INK.cyan],
+    ["1", "npx @pvgomes/agent-visualizer", INK.cyan],
     ["2", "Your agents walk in.", INK.white],
     ["3", "Hire and drive them from the page.", INK.white],
   ];

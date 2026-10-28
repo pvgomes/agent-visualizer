@@ -22,7 +22,7 @@ const test = skipAll(nodeTest, CONTROL);
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const TMP = realpathSync(mkdtempSync(join(tmpdir(), "agent-visualizer-ctl-cli-")));
 const CLI = join(TMP, "pkg", "dist", "cli.js");
-/** The same CLI where `npx agent-visualizer` puts it: `agent-visualizer` isn't on PATH there. */
+/** The same CLI where `npx @pvgomes/agent-visualizer` puts it: `agent-visualizer` isn't on PATH there. */
 const NPX_CLI = join(TMP, ".npm", "_npx", "0123abcd", "node_modules", "agent-visualizer", "dist", "cli.js");
 const kids = [];
 
@@ -227,23 +227,23 @@ nodeTest("where the control plane can't run (Windows), doctor and open say the o
   assert.match(o.stdout, /no controls to unlock here/);
 });
 
-test("run from an npx cache, every hint names npx agent-visualizer: agent-visualizer isn't on PATH there", { timeout: 30_000 }, async () => {
+test("run from an npx cache, every hint names npx @pvgomes/agent-visualizer: agent-visualizer isn't on PATH there", { timeout: 30_000 }, async () => {
   const { env, ao } = homes();
   const bad = run(["--bogus"], env, NPX_CLI);
   assert.equal(bad.status, 2);
-  assert.match(bad.stderr, /Run npx agent-visualizer --help for usage/);
-  assert.match(run(["install", "--bogus"], env, NPX_CLI).stderr, /Run npx agent-visualizer install --help for usage/);
-  assert.match(run(["--help"], env, NPX_CLI).stdout, /Run npx agent-visualizer <command> --help/);
+  assert.match(bad.stderr, /Run npx @pvgomes\/agent-visualizer --help for usage/);
+  assert.match(run(["install", "--bogus"], env, NPX_CLI).stderr, /Run npx @pvgomes\/agent-visualizer install --help for usage/);
+  assert.match(run(["--help"], env, NPX_CLI).stdout, /Run npx @pvgomes\/agent-visualizer <command> --help/);
   mkdirSync(ao, { recursive: true });
   const doc = run(["doctor"], env, NPX_CLI);
-  assert.match(doc.stdout, /npx agent-visualizer open unlocks a browser/);
-  assert.match(doc.stdout, /not installed · npx agent-visualizer install --service/);
+  assert.match(doc.stdout, /npx @pvgomes\/agent-visualizer open unlocks a browser/);
+  assert.match(doc.stdout, /not installed · npx @pvgomes\/agent-visualizer install --service/);
   const { child, info, output } = await office(env, [], { cli: NPX_CLI });
   try {
-    assert.match(output(), /Controls\s+locked · npx agent-visualizer open unlocks a browser/);
+    assert.match(output(), /Controls\s+locked · npx @pvgomes\/agent-visualizer open unlocks a browser/);
     const spent = await get(info.port, "/unlock?t=0.0.0", { "sec-fetch-site": "none" });
     assert.equal(spent.status, 403);
-    assert.match(spent.body, /Run <code>npx agent-visualizer open<\/code> for a new one/);
+    assert.match(spent.body, /Run <code>npx @pvgomes\/agent-visualizer open<\/code> for a new one/);
   } finally {
     await stop(child);
   }
@@ -293,7 +293,7 @@ test("openBrowser resolves false when no opener ran or it gave up, true when it 
   assert.equal(await openBrowser(url, { platform: "linux", opener: fakeBin(bin, "stays", "setTimeout(() => {}, 5000)"), waitMs: 300 }), true);
 });
 
-test("a background service installed through npx keeps naming npx agent-visualizer: its app copy isn't on PATH either", { timeout: 30_000 }, async () => {
+test("a background service installed through npx keeps naming npx @pvgomes/agent-visualizer: its app copy isn't on PATH either", { timeout: 30_000 }, async () => {
   const { installService, readServiceFile } = await load("src/control/service.ts");
   const { env, home, ao } = homes();
   const calls = [];
@@ -302,16 +302,16 @@ test("a background service installed through npx keeps naming npx agent-visualiz
     env: { PATH: env.PATH, LANG: "en_US.UTF-8" }, pkgRoot: join(NPX_CLI, "..", ".."), node: process.execPath, command,
     run: async (cmd, args) => (calls.push([cmd, ...args].join(" ")), { code: 0, out: "" }),
   });
-  await installService(deps("npx agent-visualizer"), { start: false, port: 4747 });
+  await installService(deps("npx @pvgomes/agent-visualizer"), { start: false, port: 4747 });
   assert.ok(calls.length && calls.every((c) => /^(launchctl|systemctl) /.test(c)), "launchctl/systemctl were only recorded");
-  assert.equal(readServiceFile(ao).command, "npx agent-visualizer");
+  assert.equal(readServiceFile(ao).command, "npx @pvgomes/agent-visualizer");
   const copy = join(ao, "app", "current", "dist", "cli.js");
   const { child, info, output } = await office(env, [], { cli: copy });
   try {
-    assert.match(output(), /Controls\s+locked · npx agent-visualizer open unlocks a browser/);
+    assert.match(output(), /Controls\s+locked · npx @pvgomes\/agent-visualizer open unlocks a browser/);
     const spent = await get(info.port, "/unlock?t=0.0.0", { "sec-fetch-site": "none" });
     assert.equal(spent.status, 403);
-    assert.match(spent.body, /Run <code>npx agent-visualizer open<\/code> for a new one/);
+    assert.match(spent.body, /Run <code>npx @pvgomes\/agent-visualizer open<\/code> for a new one/);
   } finally {
     await stop(child);
   }

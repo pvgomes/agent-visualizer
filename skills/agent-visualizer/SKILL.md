@@ -2,7 +2,7 @@
 name: agent-visualizer
 description: Talk to agent-visualizer, the live pixel-art office where the user watches their coding agents work, through the agent-visualizer MCP tools (office_status, office_peers, office_shout, office_celebrate, office_flip). Use when starting a substantial task (set a status), before editing files in a repo other agents may be working in (check peers to avoid edit collisions), on a real milestone (shout), when tests go green after a fix (celebrate), or when a failure is truly maddening (flip, once per task). Only applies when the agent-visualizer tools are available.
 ---
-<!-- Installed by agent-visualizer (npx agent-visualizer install). `npx agent-visualizer uninstall` removes it. -->
+<!-- Installed by agent-visualizer (npx @pvgomes/agent-visualizer install). `npx @pvgomes/agent-visualizer uninstall` removes it. -->
 
 # agent-visualizer
 
