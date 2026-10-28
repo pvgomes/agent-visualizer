@@ -135,7 +135,7 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
   const err = h("p", { class: "hire-err", attrs: { hidden: true, role: "alert" } });
   const summary = h("span", { class: "hire-summary" });
   const cancelBtn = h("button", { class: "btn btn-quiet", attrs: { type: "button" }, text: "Cancel" });
-  const hireBtn = h("button", { class: "btn btn-primary", attrs: { type: "submit" } }, icon("hire", 1), h("span", { class: "hire-btn-text", text: "Hire" }));
+  const hireBtn = h("button", { class: "btn btn-primary", attrs: { type: "submit" } }, icon("hire", 1), h("span", { class: "hire-btn-text", text: "Add agent" }));
   const closeX = h("button", { class: "icon-btn", attrs: { type: "button", "aria-label": "Close" } }, glyph("close", 1));
 
   const section = (title: string, ...kids: (Node | null)[]) => h("section", { class: "hire-section" }, h("h3", { class: "hire-h", text: title }), ...kids);
@@ -151,7 +151,7 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
   const form = h(
     "form",
     { class: "hire-form", attrs: { method: "dialog" } },
-    h("header", { class: "dlg-head" }, h("h2", { class: "dlg-title", text: "Hire an agent", attrs: { id: "ao-hire-title" } }), closeX),
+    h("header", { class: "dlg-head" }, h("h2", { class: "dlg-title", text: "Add agent", attrs: { id: "ao-hire-title" } }), closeX),
     scroller.el,
     h("footer", { class: "dlg-foot" }, err, h("div", { class: "dlg-foot-row" }, summary, h("span", { class: "dlg-gap" }), cancelBtn, hireBtn)),
   );
@@ -426,7 +426,7 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
     const why = problem();
     hireBtn.disabled = busy || !!why;
     hireBtn.title = why;
-    setText(hireBtn.querySelector(".hire-btn-text")!, busy ? "Hiring…" : `Hire ${agentName(agent)}`);
+    setText(hireBtn.querySelector(".hire-btn-text")!, busy ? "Adding…" : `Add ${agentName(agent)}`);
     el.style.setProperty("--accent", agentColor(agent));
   }
   const sbxName = (id: string) => running(prov(provider)).find((s) => s.id === id)?.name ?? id;

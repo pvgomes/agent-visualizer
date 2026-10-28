@@ -392,7 +392,7 @@ export function createSettings(store: ControlStore, opts: { onClose(): void; toa
       h(
         "div",
         { class: "set-card" },
-        h("div", { class: "set-row" }, h("div", null, h("h3", { class: "set-h", text: "Start at login" }), h("p", { class: "set-hint", text: s?.supported ? "A background service owns the agents you hire, so they keep running when this tab or the terminal closes." : "Not supported on this platform. Hired agents live as long as the office process." })), sw),
+        h("div", { class: "set-row" }, h("div", null, h("h3", { class: "set-h", text: "Start at login" }), h("p", { class: "set-hint", text: s?.supported ? "A background service owns the agents you add, so they keep running when this tab or the terminal closes." : "Not supported on this platform. Added agents live as long as the office process." })), sw),
         h("dl", { class: "set-facts" }, ...facts.map(([k, v]) => h("div", null, h("dt", { text: k }), h("dd", { text: v })))),
         h("p", { class: "set-hint", text: "Same as agent-visualizer install --service from a terminal." }),
       ),

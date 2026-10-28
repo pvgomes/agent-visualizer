@@ -453,7 +453,7 @@ export function createSetupSection(store: ControlStore, opts: { openSettings(tab
     problem() {
       if (!remote || !mem().on) return "";
       if (loading && !inv) return "Reading your setup…";
-      if (!inv) return `${loadErr || "Couldn't read your setup"}. Turn Your setup off to hire without it.`;
+      if (!inv) return `${loadErr || "Couldn't read your setup"}. Turn Your setup off to add an agent without it.`;
       const l = login();
       if (logins().length && !l) return "Pick how it signs in.";
       return "";

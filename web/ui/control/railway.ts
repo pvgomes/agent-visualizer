@@ -62,7 +62,7 @@ export function railwayPicker(ps: ProviderStatus, current: RailwayPick | undefin
 /** Settings › Cloud: where new sandboxes go, or why none can be made. */
 export function railwayWhere(ps: ProviderStatus): string {
   const d = ps.dest ? railwayLabel(ps, { project: ps.dest.project, environment: ps.dest.environment }) : "";
-  if (d) return `New sandboxes go in ${d} (${ps.dest!.why}); you can pick another when you hire.${ps.note ? ` ${ps.note}.` : ""}`;
-  if (ps.canCreate) return `Pick the project for each new sandbox when you hire.${ps.note ? ` ${ps.note}.` : ""}`;
+  if (d) return `New sandboxes go in ${d} (${ps.dest!.why}); you can pick another when you add an agent.${ps.note ? ` ${ps.note}.` : ""}`;
+  if (ps.canCreate) return `Pick the project for each new sandbox when you add an agent.${ps.note ? ` ${ps.note}.` : ""}`;
   return ps.note ? `${ps.note}.` : "";
 }
