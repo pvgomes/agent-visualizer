@@ -9,7 +9,7 @@ Your coding agents as little workers in a pixel-art office, on the 21st floor in
 
 Every Claude Code, Codex, Cursor or other agent session you run gets a desk. You can see at a glance who is working, who is waiting on you, and who just broke the tests.
 
-![The Rio office: desks for each project, the cloud wing for sandboxes, Christ the Redeemer through the glass and a passer-by doing keepie-uppies](docs/office.png)
+![The Rio office at sunset: desks for each project, the cloud wing for sandboxes, Sugarloaf and Christ the Redeemer through the glass, a passer-by in the Brazil kit and the live activity feed](docs/rio-office.png)
 
 ## Use
 
@@ -38,6 +38,8 @@ Your browser opens `http://127.0.0.1:4747`. Start an agent in any terminal and i
 - **Change location** (next to Hire, or `L`) moves the office to Rio de Janeiro (the default), Dubai, London, New York, Tokyo or Warsaw.
 - **The clock** shows the city's time; the strip under the TV shows yours.
 - **The view** follows the time in that city: dawn, day, sunset and night.
+
+![Change location: Rio de Janeiro, Dubai, London, New York, Tokyo and Warsaw, each with a live postcard of its view and its local time](docs/locations.png)
 
 Works with Claude Code, Codex, Command Code, opencode, Cursor, Droid, Qwen Code and Gemini CLI.
 
