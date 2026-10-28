@@ -1,0 +1,67 @@
+{
+  "name": "agent-visualizer",
+  "version": "0.3.0",
+  "private": true,
+  "description": "A live pixel-art office for your coding agents. Claude Code, Codex, Command Code, opencode, Cursor, Droid, Qwen Code and Gemini CLI sessions, local or in Daytona, Railway, Vercel and boat sandboxes, become little workers at desks.",
+  "type": "module",
+  "bin": {
+    "agent-visualizer": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs && node dist/cli.js --demo",
+    "test": "node scripts/build.mjs && node --test --test-timeout=120000 --test-force-exit test/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepack": "node scripts/build.mjs",
+    "site": "node scripts/build-site.mjs",
+    "site:dev": "node scripts/build-site.mjs --dev",
+    "prepare": "node scripts/build.mjs"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "command-code",
+    "opencode",
+    "cursor",
+    "droid",
+    "qwen-code",
+    "gemini-cli",
+    "ai-agents",
+    "coding-agents",
+    "mcp",
+    "sandbox",
+    "vercel-sandbox",
+    "daytona",
+    "railway",
+    "pixel-art",
+    "visualizer",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pvgomes/agent-visualizer.git"
+  },
+  "author": "pvgomes (https://pvgomes.com/)",
+  "homepage": "https://github.com/pvgomes/agent-visualizer#readme",
+  "bugs": "https://github.com/pvgomes/agent-visualizer/issues",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-serialize": "0.14.0",
+    "@xterm/headless": "6.0.0",
+    "@xterm/xterm": "^6.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "optionalDependencies": {
+    "@lydell/node-pty": "1.2.0-beta.15"
+  }
+}

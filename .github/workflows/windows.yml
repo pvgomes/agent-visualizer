@@ -1,0 +1,262 @@
+name: Windows
+
+# The office on windows-latest: the checks, then the packed package run the way
+# `npx agent-visualizer` runs it, from PowerShell with a fresh, empty user profile.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # npm test builds dist/ first. The control plane's suites and the tests whose fakes are POSIX
+      # shell scripts skip here (test/platform.mjs says which and why).
+      - run: npm test
+
+  pack:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: agent-visualizer-*.tgz
+
+  smoke:
+    needs: pack
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 22, 24]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: pkg
+      - name: Install the package into a fresh profile
+        run: |
+          $tgz = (Get-ChildItem pkg\agent-visualizer-*.tgz).FullName
+          $root = Join-Path $env:RUNNER_TEMP "office"
+          New-Item -ItemType Directory -Force "$root\home\AppData\Roaming", "$root\home\AppData\Local", "$root\app" | Out-Null
+          npm install --no-audit --no-fund --prefix "$root\app" $tgz
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          "TGZ=$tgz" >> $env:GITHUB_ENV
+          "OFFICE_ROOT=$root" >> $env:GITHUB_ENV
+          "OFFICE_BIN=$root\app\node_modules\.bin\agent-visualizer.cmd" >> $env:GITHUB_ENV
+      # The real agent CLIs, so `install` runs `claude mcp add` and `codex mcp add` through their .cmd shims.
+      - name: Install Claude Code and Codex
+        if: matrix.node == 24
+        continue-on-error: true
+        run: npm install -g --no-audit --no-fund @anthropic-ai/claude-code @openai/codex
+      - name: npx from cmd.exe
+        shell: cmd
+        run: npx --yes --package "%TGZ%" agent-visualizer --version
+      - name: Smoke test
+        env:
+          DISABLE_AUTOUPDATER: "1"
+        run: |
+          $ErrorActionPreference = "Stop"
+          # A user's shell: their own profile folders, no HOME, no CI (CI turns the browser off; --no-open does it here).
+          $env:USERPROFILE = "$env:OFFICE_ROOT\home"
+          $env:APPDATA = "$env:OFFICE_ROOT\home\AppData\Roaming"
+          $env:LOCALAPPDATA = "$env:OFFICE_ROOT\home\AppData\Local"
+          Remove-Item Env:HOME, Env:CI -ErrorAction SilentlyContinue
+          $bin = $env:OFFICE_BIN
+          $fail = 0
+          function Check($name, [scriptblock]$body) {
+            Write-Host "::group::$name"
+            try { & $body; Write-Host "ok: $name" } catch { Write-Host "::error::$name failed: $_"; $script:fail++ }
+            Write-Host "::endgroup::"
+          }
+          function Get-Url($url) {
+            $r = curl.exe -sS -f --max-time 10 $url
+            if ($LASTEXITCODE) { throw "curl $url exited $LASTEXITCODE" }
+            return ($r -join "`n")
+          }
+          function Get-Snapshot($port) { Get-Url "http://127.0.0.1:$port/api/snapshot" | ConvertFrom-Json }
+          function Wait-For($what, [scriptblock]$cond, $seconds = 15) {
+            for ($i = 0; $i -lt $seconds * 4; $i++) { if (& $cond) { return } ; Start-Sleep -Milliseconds 250 }
+            throw "timed out waiting for $what"
+          }
+          function Start-Office($port, $extra) {
+            $log = "$env:OFFICE_ROOT\office-$port"
+            $p = Start-Process -FilePath $bin -ArgumentList (@("--no-open", "--port", "$port") + $extra) -RedirectStandardOutput "$log.out" -RedirectStandardError "$log.err" -PassThru -NoNewWindow
+            for ($i = 0; $i -lt 60; $i++) {
+              curl.exe -s -f --max-time 2 "http://127.0.0.1:$port/healthz" | Out-Null
+              if (-not $LASTEXITCODE) { return $p }
+              if ($p.HasExited) { break }
+              Start-Sleep -Milliseconds 500
+            }
+            Get-Content "$log.out", "$log.err" -ErrorAction SilentlyContinue | Write-Host
+            throw "the office on port $port never answered /healthz"
+          }
+          function Stop-Office($p, $port) {
+            taskkill /T /F /PID $p.Id | Out-Null
+            Write-Host "--- office $port stdout"; Get-Content "$env:OFFICE_ROOT\office-$port.out" -ErrorAction SilentlyContinue | Write-Host
+            Write-Host "--- office $port stderr"; Get-Content "$env:OFFICE_ROOT\office-$port.err" -ErrorAction SilentlyContinue | Write-Host
+          }
+          function Mcp($cwd, $lines) {
+            Push-Location $cwd
+            try { $r = $lines | & $bin mcp --agent claude } finally { Pop-Location }
+            $r | Write-Host
+            return ($r -join "`n")
+          }
+          $init = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"claude-code","version":"0"}}}'
+
+          # A Claude Code session as Claude Code writes it on Windows: ~\.claude\projects\<C--Users-me-code-app>\<id>.jsonl.
+          $proj = "$env:USERPROFILE\code\app"
+          New-Item -ItemType Directory -Force "$proj\.git" | Out-Null
+          $tdir = "$env:USERPROFILE\.claude\projects\" + ($proj -replace '[^A-Za-z0-9]', '-')
+          New-Item -ItemType Directory -Force $tdir | Out-Null
+          $sid = "11111111-2222-4333-8444-555555555555"
+          $transcript = "$tdir\$sid.jsonl"
+          function Line($type, $message, $uuid) {
+            @{ cwd = $proj; sessionId = $sid; version = "2.1.0"; isSidechain = $false; userType = "external"; type = $type; uuid = $uuid; timestamp = (Get-Date).ToUniversalTime().ToString("o"); message = $message } | ConvertTo-Json -Compress -Depth 8
+          }
+          [IO.File]::WriteAllText($transcript, (Line "user" @{ role = "user"; content = "fix the build" } "u1") + "`n")
+
+          Check "--help" {
+            $h = & $bin --help
+            if ($LASTEXITCODE) { throw "exit $LASTEXITCODE" }
+            if (-not ($h -match "Usage")) { throw "no usage text" }
+            & $bin --version
+          }
+          Check "npx --package" {
+            $v = npx --yes --package $env:TGZ agent-visualizer --version
+            if ($LASTEXITCODE) { throw "exit $LASTEXITCODE" }
+            Write-Host "npx: $v"
+          }
+          Check "office: page, chunks, healthz, snapshot, events, a Windows transcript, live lines, MCP signals" {
+            $p = Start-Office 4747 @()
+            try {
+              $html = Get-Url "http://127.0.0.1:4747/"
+              $assets = [regex]::Matches($html, '/assets/[A-Za-z0-9._-]+\.js') | ForEach-Object { $_.Value } | Sort-Object -Unique
+              if (-not $assets) { throw "index.html names no scripts" }
+              foreach ($a in $assets) { Get-Url "http://127.0.0.1:4747$a" | Out-Null; Write-Host "fetched $a" }
+              Get-Url "http://127.0.0.1:4747/healthz" | Write-Host
+              $events = (curl.exe -s -N --max-time 3 "http://127.0.0.1:4747/events") -join "`n"
+              if ($events -notmatch "event: snapshot") { throw "/events sent no snapshot" }
+              if (-not (Test-Path "$env:USERPROFILE\.agent-visualizer\office.json")) { throw "no office.json in the fresh profile" }
+
+              Wait-For "the Claude session in the snapshot" { (Get-Snapshot 4747).workers | Where-Object { $_.agent -eq "claude" } }
+              $w = (Get-Snapshot 4747).workers | Where-Object { $_.agent -eq "claude" } | Select-Object -First 1
+              Write-Host "worker: project=$($w.project) cwd=$($w.cwd) status=$($w.status)"
+              if ($w.project -ne "app") { throw "project is '$($w.project)', not 'app'" }
+              if ($w.cwd -ne "~\code\app") { throw "cwd is '$($w.cwd)', not '~\code\app'" }
+
+              # A line appended while the office runs shows up live.
+              $tool = @{ role = "assistant"; model = "claude-opus-5-5"; content = @(@{ type = "tool_use"; id = "tu_1"; name = "Edit"; input = @{ file_path = "$proj\src\auth.ts"; old_string = "a"; new_string = "b" } }) }
+              [IO.File]::AppendAllText($transcript, (Line "assistant" $tool "u2") + "`n")
+              Wait-For "the Edit to show up" { ((Get-Snapshot 4747).workers | Where-Object { $_.agent -eq "claude" }).summary -match "auth\.ts" }
+              Write-Host "live: $(((Get-Snapshot 4747).workers | Where-Object { $_.agent -eq 'claude' }).summary)"
+
+              # The office tools from inside the project folder reach that worker.
+              $call = '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"office_status","arguments":{"text":"smoke status","mood":"🚀"}}}'
+              Mcp $proj @($init, $call) | Out-Null
+              Wait-For "the status signal on the worker" { ((Get-Snapshot 4747).workers | Where-Object { $_.agent -eq "claude" }).mood -match "smoke status" }
+              $peers = Mcp $proj @($init, '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"office_peers","arguments":{}}}')
+              if ($peers -notmatch 'You: Claude Code') { throw "office_peers didn't recognise the caller" }
+            } finally { Stop-Office $p 4747 }
+          }
+          Check "--demo" {
+            $p = Start-Office 4748 @("--demo")
+            try {
+              curl.exe -s -N --max-time 4 "http://127.0.0.1:4748/events" | Out-Null
+              $snap = Get-Snapshot 4748
+              Write-Host "demo snapshot: $($snap.workers.Count) workers"
+              if (-not $snap.demo) { throw "the snapshot is not the demo's" }
+            } finally { Stop-Office $p 4748 }
+          }
+          Check "mcp" {
+            $r = Mcp $env:USERPROFILE @($init, '{"jsonrpc":"2.0","id":2,"method":"tools/list"}')
+            if ($r -notmatch '"office_status"') { throw "no tools in tools/list" }
+          }
+          Check "doctor" {
+            $d = & $bin doctor
+            $d | Write-Host
+            if ($LASTEXITCODE -gt 1) { throw "exit $LASTEXITCODE" }
+            if (-not ($d -match "watch-only")) { throw "doctor doesn't say the controls are off" }
+          }
+          Check "open" {
+            $o = & $bin open
+            $o | Write-Host
+            if ($LASTEXITCODE -ne 1 -or -not ($o -match "watch-only")) { throw "open should refuse plainly" }
+          }
+          Check "install --dry-run" {
+            & $bin install --dry-run
+            if ($LASTEXITCODE -gt 1) { throw "exit $LASTEXITCODE" }
+          }
+          Check "install --service and uninstall --service" {
+            foreach ($c in @("install", "uninstall")) {
+              $s = & $bin $c --service 2>&1
+              $s | Write-Host
+              if ($LASTEXITCODE -ne 1) { throw "$c --service exited $LASTEXITCODE" }
+              if ($s -match "    at ") { throw "a stack trace" }
+            }
+          }
+          Check "install, launch and uninstall with the real claude and codex CLIs" {
+            if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { Write-Host "Claude Code isn't installed on this runner; skipped"; return }
+            # Codex finds its home through Windows' profile API, not USERPROFILE: point it at the fresh profile.
+            $env:CODEX_HOME = "$env:USERPROFILE\.codex"
+            New-Item -ItemType Directory -Force $env:CODEX_HOME | Out-Null
+            # Run from npx's cache, the way `npx agent-visualizer install` does: agents get the pinned npx command, through cmd /c.
+            $plan = (npx --yes --package $env:TGZ agent-visualizer install --dry-run --agents claude 2>&1) -join "`n"
+            Write-Host $plan
+            if ($plan -notmatch 'cmd /c npx -y agent-visualizer@\d+\.\d+\.\d+ mcp --agent') { throw "npx install doesn't register cmd /c npx" }
+            $out = & $bin install --yes --agents claude,codex 2>&1
+            $out | Write-Host
+            if ($LASTEXITCODE) { throw "install exited $LASTEXITCODE" }
+            if ($out -match "DeprecationWarning") { throw "install printed a Node deprecation warning" }
+            if (-not ($out -match "Claude Code\s+MCP registered with claude mcp add")) { throw "claude mcp add didn't take" }
+            if (-not ($out -match "Codex\s+MCP registered with codex mcp add")) { throw "codex mcp add didn't take" }
+            $e = (Get-Content "$env:USERPROFILE\.claude.json" -Raw | ConvertFrom-Json).mcpServers.agent-visualizer
+            if (-not $e) { throw "no agent-visualizer server in .claude.json" }
+            Write-Host "claude runs: $($e.command) $($e.args -join ' ')"
+            $toml = Get-Content "$env:CODEX_HOME\config.toml" -Raw
+            Write-Host $toml
+            if ($toml -notmatch '\[mcp_servers\.agent-visualizer\]') { throw "no agent-visualizer server in config.toml" }
+            # What Claude Code starts, started the same way.
+            $r = ($init, '{"jsonrpc":"2.0","id":2,"method":"tools/list"}') | & $e.command @($e.args)
+            if (($r -join "`n") -notmatch '"office_status"') { throw "the registered command doesn't serve the tools" }
+            $d = & $bin doctor
+            $d | Write-Host
+            if (-not (($d -match "Claude Code") -match "registered") -or -not (($d -match "Codex") -match "registered")) { throw "doctor doesn't see both registered" }
+            & $bin uninstall --yes --agents claude,codex
+            if ($LASTEXITCODE) { throw "uninstall exited $LASTEXITCODE" }
+            if ((Get-Content "$env:USERPROFILE\.claude.json" -Raw | ConvertFrom-Json).mcpServers.agent-visualizer) { throw "still in .claude.json after uninstall" }
+            if ((Test-Path "$env:CODEX_HOME\config.toml") -and ((Get-Content "$env:CODEX_HOME\config.toml" -Raw) -match '\[mcp_servers\.agent-visualizer\]')) { throw "still in config.toml after uninstall" }
+          }
+          Check "node-pty" {
+            Push-Location "$env:OFFICE_ROOT\app"
+            try {
+              node -e "const p=require('@lydell/node-pty');const t=p.spawn('cmd.exe',['/c','echo','pty-ok'],{cols:80,rows:24});let o='';t.onData(d=>o+=d);t.onExit(e=>{console.log(JSON.stringify(o));process.exit(o.includes('pty-ok')?0:1)});setTimeout(()=>{console.log('timeout',JSON.stringify(o));process.exit(2)},15000)"
+              if ($LASTEXITCODE) { throw "exit $LASTEXITCODE" }
+            } finally { Pop-Location }
+          }
+          if ($fail) { Write-Host "::error::$fail smoke checks failed"; exit 1 }

@@ -1,0 +1,31 @@
+{"timestamp":"2026-01-15T10:00:00.000Z","type":"session_meta","payload":{"id":"019a0000-1111-7222-8333-444455556666","timestamp":"2026-01-15T10:00:00.000Z","cwd":"/tmp/demo-app","originator":"codex_cli_rs","cli_version":"0.200.0","source":"cli","base_instructions":{"text":"SECRET INSTRUCTIONS"}}}
+{"timestamp":"2026-01-15T10:00:00.000Z","type":"turn_context","payload":{"cwd":"/tmp/demo-app","model":"gpt-6-codex","approval_policy":"on-request"}}
+{"timestamp":"2026-01-15T10:00:01.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"SECRET CODEX PROMPT"}]}}
+{"timestamp":"2026-01-15T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"SECRET CODEX PROMPT","images":[]}}
+{"timestamp":"2026-01-15T10:00:01.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"t1"}}
+{"timestamp":"2026-01-15T10:00:02.000Z","type":"response_item","payload":{"type":"reasoning","summary":[],"encrypted_content":"x"}}
+{"timestamp":"2026-01-15T10:00:02.000Z","type":"event_msg","payload":{"type":"agent_reasoning","text":"SECRET"}}
+{"timestamp":"2026-01-15T10:00:03.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"cd /tmp/demo-app && cargo test -- --nocapture\",\"workdir\":\"/tmp/demo-app\"}","call_id":"call_a"}}
+{"timestamp":"2026-01-15T10:00:04.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_a","output":"Chunk ID: abc\nWall time: 1.2 seconds\nProcess exited with code 101\nOutput:\ntest result: FAILED"}}
+{"timestamp":"2026-01-15T10:00:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":800,"output_tokens":200,"total_tokens":1200},"last_token_usage":{"total_tokens":1200}}}}
+{"timestamp":"2026-01-15T10:00:04.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":800,"output_tokens":200,"total_tokens":1200},"last_token_usage":{"total_tokens":1200}}}}
+{"timestamp":"2026-01-15T10:00:05.000Z","type":"response_item","payload":{"type":"custom_tool_call","name":"apply_patch","call_id":"call_b","input":"*** Begin Patch\n*** Update File: src/lib.rs\n@@\n-SECRET OLD\n+SECRET NEW\n*** Add File: src/new.rs\n+x\n*** End Patch"}}
+{"timestamp":"2026-01-15T10:00:05.000Z","type":"event_msg","payload":{"type":"patch_apply_end","call_id":"call_b","success":true,"changes":{}}}
+{"timestamp":"2026-01-15T10:00:05.000Z","type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"call_b","output":"Exit code: 0\nWall time: 0 seconds\nOutput:\nSuccess."}}
+{"timestamp":"2026-01-15T10:00:06.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"cargo test\",\"workdir\":\"/tmp/demo-app\"}","call_id":"call_c"}}
+{"timestamp":"2026-01-15T10:00:07.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_c","output":"Chunk ID: def\nWall time: 10 seconds\nProcess running with session ID 7\nOutput:\nrunning 3 tests"}}
+{"timestamp":"2026-01-15T10:00:08.000Z","type":"response_item","payload":{"type":"function_call","name":"write_stdin","arguments":"{\"session_id\":7,\"chars\":\"\",\"yield_time_ms\":5000}","call_id":"call_d"}}
+{"timestamp":"2026-01-15T10:00:09.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_d","output":"Chunk ID: ghi\nWall time: 5 seconds\nProcess exited with code 0\nOutput:\ntest result: ok. 3 passed"}}
+{"timestamp":"2026-01-15T10:00:10.000Z","type":"response_item","payload":{"type":"custom_tool_call","name":"exec","call_id":"call_e","input":"const r = await tools.exec_command({cmd: \"rg -n 'SECRET_NEEDLE' src\", workdir: \"/tmp/demo-app\"});\ntext(r.output);"}}
+{"timestamp":"2026-01-15T10:00:10.000Z","type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"call_e","output":[{"type":"input_text","text":"Script completed\nWall time 0.1 seconds\nOutput:\nsrc/lib.rs:1"}]}}
+{"timestamp":"2026-01-15T10:00:11.000Z","type":"response_item","payload":{"type":"function_call","name":"query_docs","namespace":"mcp__context7","arguments":"{\"query\":\"SECRET\"}","call_id":"call_f"}}
+{"timestamp":"2026-01-15T10:00:11.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_f","output":"docs"}}
+{"timestamp":"2026-01-15T10:00:12.000Z","type":"response_item","payload":{"type":"function_call","name":"spawn_agent","namespace":"collaboration","arguments":"{\"task_name\":\"secret_task_name\",\"message\":\"SECRET\"}","call_id":"call_g"}}
+{"timestamp":"2026-01-15T10:00:12.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_g","output":"{\"agent_id\":\"x\"}"}}
+{"timestamp":"2026-01-15T10:00:13.000Z","type":"event_msg","payload":{"type":"web_search_end","call_id":"ws_1","query":"SECRET SEARCH","action":{"type":"search","query":"SECRET SEARCH"}}}
+garbage line that is not json
+{"timestamp":"2026-01-15T10:00:14.000Z","type":"event_msg","payload":{"type":"agent_message","message":"SECRET COMMENTARY","phase":"commentary"}}
+{"timestamp":"2026-01-15T10:00:15.000Z","type":"event_msg","payload":{"type":"agent_message","message":"SECRET FINAL","phase":"final_answer"}}
+{"timestamp":"2026-01-15T10:00:15.000Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"t1","last_agent_message":"SECRET FINAL"}}
+{"timestamp":"2026-01-15T10:00:20.000Z","type":"event_msg","payload":{"type":"user_message","message":"SECRET CODEX PROMPT 2","images":[]}}
+{"timestamp":"2026-01-15T10:00:21.000Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted","turn_id":"t2"}}

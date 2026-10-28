@@ -1,0 +1,11 @@
+name: Idea
+description: Something the office should show or do.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you'd like to see, and the moment it's for. A sketch or reference helps.
+    validations:
+      required: true

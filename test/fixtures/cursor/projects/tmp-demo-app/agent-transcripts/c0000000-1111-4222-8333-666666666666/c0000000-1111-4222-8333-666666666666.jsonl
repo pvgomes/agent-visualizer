@@ -1,0 +1,8 @@
+{"role":"user","message":{"content":[{"type":"text","text":"<user_query>\nmake the build pass\n</user_query>"}]}}
+{"role":"user","message":{"content":[{"type":"text","text":"<external_links>\nnone\n</external_links>"}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"Looking."},{"type":"tool_use","name":"Read","input":{"path":"/tmp/demo-app/src/index.ts"}}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"Running the tests."},{"type":"tool_use","name":"Shell","input":{"command":"cd /tmp/demo-app && bun test","description":"run tests"}}]}}
+{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Task","input":{"subagent_type":"explore","description":"find usages","prompt":"find usages of render","run_in_background":true}}]}}
+{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"path":"/tmp/demo-app/src/index.ts","old_string":"a","new_string":"b"}}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
+{"type":"turn_ended","status":"success"}

@@ -1,0 +1,8 @@
+{"timestamp":"2026-01-15T10:00:12.000Z","type":"session_meta","payload":{"id":"019a0000-9999-7aaa-8bbb-ccccddddeeee","timestamp":"2026-01-15T10:00:12.000Z","cwd":"/tmp/demo-app","originator":"codex_cli_rs","cli_version":"0.200.0","parent_thread_id":"019a0000-1111-7222-8333-444455556666","source":{"subagent":{"thread_spawn":{"parent_thread_id":"019a0000-1111-7222-8333-444455556666","depth":1,"agent_path":"/root/secret_task_name","agent_nickname":"Noether"}}}}}
+{"timestamp":"2026-01-15T10:00:00.000Z","type":"session_meta","payload":{"id":"019a0000-1111-7222-8333-444455556666","timestamp":"2026-01-15T10:00:00.000Z","cwd":"/tmp/other","source":"cli"}}
+{"timestamp":"2026-01-15T10:00:12.000Z","type":"turn_context","payload":{"cwd":"/tmp/demo-app","model":"gpt-6-codex-mini"}}
+{"timestamp":"2026-01-15T10:00:12.000Z","type":"event_msg","payload":{"type":"user_message","message":"SECRET SUBAGENT TASK"}}
+{"timestamp":"2026-01-15T10:00:13.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"sed -n '1,80p' src/lib.rs\"}","call_id":"sc_1"}}
+{"timestamp":"2026-01-15T10:00:13.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"sc_1","output":"Chunk ID: a\nWall time: 0 seconds\nProcess exited with code 0\nOutput:\nfn main() {}"}}
+{"timestamp":"2026-01-15T10:00:14.000Z","type":"event_msg","payload":{"type":"agent_message","message":"SECRET","phase":"final_answer"}}
+{"timestamp":"2026-01-15T10:00:14.000Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"s1","last_agent_message":"SECRET"}}

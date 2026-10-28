@@ -1,0 +1,10 @@
+# LF everywhere, Windows checkouts included: the skill file's frontmatter and the test fixtures are
+# read byte for byte, and a build from a CRLF checkout would hand CRLF to every agent.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp4 binary
+*.woff2 binary

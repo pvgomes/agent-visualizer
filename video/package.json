@@ -1,0 +1,20 @@
+{
+  "name": "agent-visualizer-launch-video",
+  "private": true,
+  "type": "module",
+  "description": "The launch video: the real office, scripted on a virtual clock and rendered frame by frame in headless Chromium.",
+  "scripts": {
+    "render": "node tools/render.mjs",
+    "render:main": "node tools/render.mjs main",
+    "render:social": "node tools/render.mjs social",
+    "render:vertical": "node tools/render.mjs vertical",
+    "render:square": "node tools/render.mjs square",
+    "readme": "node tools/render.mjs readme readme-gif stills",
+    "typecheck": "../node_modules/.bin/tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "gifenc": "1.0.3",
+    "playwright-core": "1.64.1",
+    "pngjs": "7.0.0"
+  }
+}

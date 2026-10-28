@@ -1,0 +1,3 @@
+{"role":"user","message":{"content":[{"type":"text","text":"find usages of render"}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"Searching."},{"type":"tool_use","name":"Grep","input":{"path":"/tmp/demo-app/src","pattern":"render\\("}}]}}
+{"type":"turn_ended","status":"success"}

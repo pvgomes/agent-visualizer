@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "allowJs": false, "noUnusedLocals": true },
+  "include": ["src", "../web/scene/svg.d.ts", "../web/ui/svg.d.ts"]
+}

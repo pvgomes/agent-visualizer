@@ -1,0 +1,24 @@
+name: Agent or platform request
+description: A coding agent or sandbox platform you'd like to see in the office.
+labels: [enhancement]
+title: "support: "
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Which agent or platform
+      placeholder: Amp, Kiro, E2B, Modal
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options: [coding agent, sandbox platform, other]
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where it keeps its sessions
+      description: Optional. The folder or API it writes transcripts to, their format, a link to its docs. Describe the shape rather than pasting a real transcript.

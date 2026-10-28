@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-visualizer scene dev</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0a13; overflow: hidden; }
+  #office { position: fixed; inset: 0; }
+  #bar { position: fixed; left: 12px; bottom: 12px; display: flex; gap: 6px; font: 12px ui-monospace, monospace; z-index: 2; }
+  #bar button { background: #1a1926; color: #c9c7d8; border: 1px solid #38364d; padding: 6px 9px; border-radius: 6px; cursor: pointer; }
+  #bar button:hover { color: #fff; border-color: #706e8a; }
+  #stats { position: fixed; right: 12px; bottom: 12px; color: #706e8a; font: 11px ui-monospace, monospace; z-index: 2; }
+  body.clean #bar, body.clean #stats { display: none; }
+</style>
+</head>
+<body>
+<div id="office"></div>
+<div id="bar">
+  <button data-a="crt">crt</button>
+  <button data-a="flip">flip</button>
+  <button data-a="pass">pass</button>
+  <button data-a="wait">wait</button>
+  <button data-a="intern">intern</button>
+  <button data-a="join">join</button>
+  <button data-a="leave">leave</button>
+  <button data-a="beam">beam</button>
+  <button data-a="mood">mood</button>
+  <button data-a="shout">shout</button>
+  <button data-a="party">party</button>
+  <button data-a="rage">rage</button>
+  <button data-a="night">time</button>
+</div>
+<div id="stats"></div>
+<script type="module" src="dev.js"></script>
+</body>
+</html>

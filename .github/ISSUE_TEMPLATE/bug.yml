@@ -1,0 +1,27 @@
+name: Bug
+description: The office, the CLI, the installer or a sandbox does something wrong.
+labels: [bug]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The part of agent-visualizer, and the agent or platform involved.
+      placeholder: Codex workers never leave, install for opencode, the Daytona cloud wing
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw. A screenshot helps; please don't paste transcripts, they can hold secrets.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: agent-visualizer, the agent, your OS and Node.
+      placeholder: agent-visualizer 0.1.0, Claude Code 2.1, macOS 27, Node 24
+    validations:
+      required: true

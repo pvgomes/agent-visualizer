@@ -1,0 +1,4 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["*.ts", "shims/*.ts", "../web/scene/svg.d.ts"]
+}

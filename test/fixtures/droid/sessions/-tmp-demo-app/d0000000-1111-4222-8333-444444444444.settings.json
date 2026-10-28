@@ -1,0 +1,1 @@
+{"assistantActiveTimeMs": 1000, "autonomyLevel": "low", "autonomyMode": "normal", "interactionMode": "auto", "model": "claude-opus-5-5", "providerLock": "anthropic", "providerLockTimestamp": "2026-01-15T10:00:00.000Z", "reasoningEffort": "medium", "tokenUsage": {"inputTokens": 1000, "outputTokens": 200, "cacheCreationTokens": 0, "cacheReadTokens": 300, "thinkingTokens": 0}}
