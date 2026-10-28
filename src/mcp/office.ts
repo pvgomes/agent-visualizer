@@ -1,6 +1,6 @@
 /*
  * Finding the office from inside an MCP server. The office is whatever
- * `npx agent-visualizer` is serving on this machine: it leaves its port and a
+ * `npx @pvgomes/agent-visualizer` is serving on this machine: it leaves its port and a
  * random secret in $AGENT_VISUALIZER_HOME/office.json (0600, written on start,
  * see writeOfficeFile). An office only counts once it proves it knows that
  * secret: /healthz answers a fresh random challenge with an HMAC of it, so

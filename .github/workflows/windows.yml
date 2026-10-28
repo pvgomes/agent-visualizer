@@ -1,7 +1,7 @@
 name: Windows
 
 # The office on windows-latest: the checks, then the packed package run the way
-# `npx agent-visualizer` runs it, from PowerShell with a fresh, empty user profile.
+# `npx @pvgomes/agent-visualizer` runs it, from PowerShell with a fresh, empty user profile.
 on:
   pull_request:
   push:
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: package
-          path: agent-visualizer-*.tgz
+          path: "*agent-visualizer-*.tgz"
 
   smoke:
     needs: pack
@@ -61,7 +61,7 @@ jobs:
           path: pkg
       - name: Install the package into a fresh profile
         run: |
-          $tgz = (Get-ChildItem pkg\agent-visualizer-*.tgz).FullName
+          $tgz = (Get-ChildItem pkg\*agent-visualizer-*.tgz).FullName
           $root = Join-Path $env:RUNNER_TEMP "office"
           New-Item -ItemType Directory -Force "$root\home\AppData\Roaming", "$root\home\AppData\Local", "$root\app" | Out-Null
           npm install --no-audit --no-fund --prefix "$root\app" $tgz
@@ -225,17 +225,17 @@ jobs:
             # Codex finds its home through Windows' profile API, not USERPROFILE: point it at the fresh profile.
             $env:CODEX_HOME = "$env:USERPROFILE\.codex"
             New-Item -ItemType Directory -Force $env:CODEX_HOME | Out-Null
-            # Run from npx's cache, the way `npx agent-visualizer install` does: agents get the pinned npx command, through cmd /c.
+            # Run from npx's cache, the way `npx @pvgomes/agent-visualizer install` does: agents get the pinned npx command, through cmd /c.
             $plan = (npx --yes --package $env:TGZ agent-visualizer install --dry-run --agents claude 2>&1) -join "`n"
             Write-Host $plan
-            if ($plan -notmatch 'cmd /c npx -y agent-visualizer@\d+\.\d+\.\d+ mcp --agent') { throw "npx install doesn't register cmd /c npx" }
+            if ($plan -notmatch 'cmd /c npx -y @pvgomes/agent-visualizer@\d+\.\d+\.\d+ mcp --agent') { throw "npx install doesn't register cmd /c npx" }
             $out = & $bin install --yes --agents claude,codex 2>&1
             $out | Write-Host
             if ($LASTEXITCODE) { throw "install exited $LASTEXITCODE" }
             if ($out -match "DeprecationWarning") { throw "install printed a Node deprecation warning" }
             if (-not ($out -match "Claude Code\s+MCP registered with claude mcp add")) { throw "claude mcp add didn't take" }
             if (-not ($out -match "Codex\s+MCP registered with codex mcp add")) { throw "codex mcp add didn't take" }
-            $e = (Get-Content "$env:USERPROFILE\.claude.json" -Raw | ConvertFrom-Json).mcpServers.agent-visualizer
+            $e = (Get-Content "$env:USERPROFILE\.claude.json" -Raw | ConvertFrom-Json).mcpServers.'agent-visualizer'
             if (-not $e) { throw "no agent-visualizer server in .claude.json" }
             Write-Host "claude runs: $($e.command) $($e.args -join ' ')"
             $toml = Get-Content "$env:CODEX_HOME\config.toml" -Raw
@@ -249,7 +249,7 @@ jobs:
             if (-not (($d -match "Claude Code") -match "registered") -or -not (($d -match "Codex") -match "registered")) { throw "doctor doesn't see both registered" }
             & $bin uninstall --yes --agents claude,codex
             if ($LASTEXITCODE) { throw "uninstall exited $LASTEXITCODE" }
-            if ((Get-Content "$env:USERPROFILE\.claude.json" -Raw | ConvertFrom-Json).mcpServers.agent-visualizer) { throw "still in .claude.json after uninstall" }
+            if ((Get-Content "$env:USERPROFILE\.claude.json" -Raw | ConvertFrom-Json).mcpServers.'agent-visualizer') { throw "still in .claude.json after uninstall" }
             if ((Test-Path "$env:CODEX_HOME\config.toml") -and ((Get-Content "$env:CODEX_HOME\config.toml" -Raw) -match '\[mcp_servers\.agent-visualizer\]')) { throw "still in config.toml after uninstall" }
           }
           Check "node-pty" {

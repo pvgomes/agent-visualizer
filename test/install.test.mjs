@@ -446,13 +446,13 @@ test("launch choice: npx cache -> npx; checkout -> absolute node + script; remot
   const local = M.chooseLaunch({ remote: false, script: "/Users/me/agent-visualizer/dist/cli.js", node: "/opt/homebrew/bin/node" });
   assert.deepEqual(M.launchFor(local, "qwen"), { command: "/opt/homebrew/bin/node", args: ["/Users/me/agent-visualizer/dist/cli.js", "mcp", "--agent", "qwen"] });
   // Pinned to the running version, never @latest.
-  assert.deepEqual(M.launchFor(M.chooseLaunch({ remote: true, version: "0.1.0" }), "codex"), { command: "npx", args: ["-y", "agent-visualizer@0.1.0", "mcp", "--agent", "codex"] });
-  assert.equal(M.npxPackage("1.2.3-beta.1"), "agent-visualizer@1.2.3-beta.1");
+  assert.deepEqual(M.launchFor(M.chooseLaunch({ remote: true, version: "0.1.0" }), "codex"), { command: "npx", args: ["-y", "@pvgomes/agent-visualizer@0.1.0", "mcp", "--agent", "codex"] });
+  assert.equal(M.npxPackage("1.2.3-beta.1"), "@pvgomes/agent-visualizer@1.2.3-beta.1");
 });
 
-test("selfCommand: hints name npx agent-visualizer from an npx cache, where agent-visualizer isn't on PATH", () => {
-  assert.equal(M.selfCommand("/Users/me/.npm/_npx/abc123/node_modules/agent-visualizer/dist/cli.js"), "npx agent-visualizer");
-  assert.equal(M.selfCommand("/tmp/dlx-12345/node_modules/agent-visualizer/dist/cli.js"), "npx agent-visualizer");
+test("selfCommand: hints name npx @pvgomes/agent-visualizer from an npx cache, where agent-visualizer isn't on PATH", () => {
+  assert.equal(M.selfCommand("/Users/me/.npm/_npx/abc123/node_modules/agent-visualizer/dist/cli.js"), "npx @pvgomes/agent-visualizer");
+  assert.equal(M.selfCommand("/tmp/dlx-12345/node_modules/agent-visualizer/dist/cli.js"), "npx @pvgomes/agent-visualizer");
   assert.equal(M.selfCommand("/opt/homebrew/lib/node_modules/agent-visualizer/dist/cli.js"), "agent-visualizer");
   assert.equal(M.selfCommand("/Users/me/agent-visualizer/dist/cli.js"), "agent-visualizer");
 });
@@ -475,7 +475,9 @@ test("stableNode never registers a node found through a relative PATH entry", ()
 
 test("npmHasVersion: published, missing, unreachable", async () => {
   const fake = (status, body) => async () => ({ status, ok: status < 300, json: async () => body });
-  assert.equal(await M.npmHasVersion("0.1.0", { fetch: fake(200, { name: "agent-visualizer", version: "0.1.0", dist: { tarball: "https://x/t.tgz" } }) }), true);
+  assert.equal(await M.npmHasVersion("0.1.0", { fetch: fake(200, { name: "@pvgomes/agent-visualizer", version: "0.1.0", dist: { tarball: "https://x/t.tgz" } }) }), true);
+  // the unscoped name on npm is someone else's package: never mistaken for ours
+  assert.equal(await M.npmHasVersion("0.1.0", { fetch: fake(200, { name: "agent-visualizer", version: "0.1.0", dist: { tarball: "https://x/t.tgz" } }) }), false);
   assert.equal(await M.npmHasVersion("0.1.0", { fetch: fake(404, {}) }), false);
   assert.equal(await M.npmHasVersion("0.1.0", { fetch: fake(200, { name: "someone-else", version: "0.1.0", dist: { tarball: "x" } }) }), false);
   assert.equal(await M.npmHasVersion("0.1.0", { fetch: async () => { throw new Error("offline"); } }), null);

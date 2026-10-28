@@ -1,7 +1,6 @@
 {
-  "name": "agent-visualizer",
+  "name": "@pvgomes/agent-visualizer",
   "version": "0.3.0",
-  "private": true,
   "description": "A live pixel-art office for your coding agents. Claude Code, Codex, Command Code, opencode, Cursor, Droid, Qwen Code and Gemini CLI sessions, local or in Daytona, Railway, Vercel and boat sandboxes, become little workers at desks.",
   "type": "module",
   "bin": {
@@ -9,8 +8,12 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18"
   },
@@ -51,7 +54,7 @@
   "author": "pvgomes (https://pvgomes.com/)",
   "homepage": "https://github.com/pvgomes/agent-visualizer#readme",
   "bugs": "https://github.com/pvgomes/agent-visualizer/issues",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^26.6.5",
     "@xterm/addon-fit": "^0.11.0",

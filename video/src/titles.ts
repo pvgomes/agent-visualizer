@@ -207,9 +207,9 @@ export function terminals(g: CanvasRenderingContext2D, W: number, H: number, t: 
 
 /* -------------------------------------------------------------- the command */
 
-export const COMMAND = "npx agent-visualizer";
+export const COMMAND = "npx @pvgomes/agent-visualizer";
 
-/** `$ npx agent-visualizer`, typed in neon cyan. `typed` is how many characters show; `glow` 0..1. */
+/** `$ npx @pvgomes/agent-visualizer`, typed in neon cyan. `typed` is how many characters show; `glow` 0..1. */
 export function commandLine(g: CanvasRenderingContext2D, cx: number, cy: number, scale: number, typed: number, cursorOn: boolean, glow: number, color: string = INK.cyan) {
   const s = Math.round(scale);
   const full = `$ ${COMMAND}`;

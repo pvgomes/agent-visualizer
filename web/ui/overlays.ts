@@ -14,7 +14,7 @@ export interface EmptyCard {
   setControl(state: "enabled" | "locked" | "off" | "unknown", lockedTip: string): void;
 }
 
-const DEMO_CMD = "npx agent-visualizer --demo";
+const DEMO_CMD = "npx @pvgomes/agent-visualizer --demo";
 
 export function createEmpty(opts: { onHire(): void } = { onHire: () => undefined }): EmptyCard {
   const title = h("h1", { class: "empty-title" });

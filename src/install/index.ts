@@ -125,7 +125,7 @@ const TARGET_HELP = `  --ssh <host>          Do it on an ssh box (user@host or a
   --boat <id|all>       ... in boat VMs
   --railway <id|all>    ... in Railway sandboxes
   --vercel <id|all>     ... in Vercel Sandboxes
-                        (remote installs need Node 18+ there and register \`npx -y agent-visualizer@<this version> mcp\`,
+                        (remote installs need Node 18+ there and register \`npx -y @pvgomes/agent-visualizer@<this version> mcp\`,
                         so they need this version published on npm)`;
 
 function help(cmd: string): string {
@@ -200,7 +200,7 @@ function ago(ms: number): string {
 
 async function officeLine(out: Out): Promise<void> {
   const port = await findOffice();
-  if (port === null) out(`${PAD}${dim("Office")}     ${yellow("not running")} ${dim("· start it with")} ${bold("npx agent-visualizer")}`);
+  if (port === null) out(`${PAD}${dim("Office")}     ${yellow("not running")} ${dim("· start it with")} ${bold("npx @pvgomes/agent-visualizer")}`);
   else {
     const snap = await fetchSnapshot(port);
     const n = snap?.workers.length ?? 0;
@@ -218,7 +218,7 @@ async function officeLine(out: Out): Promise<void> {
 
 /** Remote platforms whose CLI or credentials are present here, for doctor. */
 async function remoteHints(sys: Sys): Promise<string[]> {
-  // The office's own auto-detection, when src/remote is registered: the same answer `npx agent-visualizer` acts on.
+  // The office's own auto-detection, when src/remote is registered: the same answer `npx @pvgomes/agent-visualizer` acts on.
   const hints = detectRemotes() ?? [];
   if (!hints.length) {
     if (await sys.which("railway")) hints.push("railway CLI");
@@ -256,7 +256,7 @@ async function doctor(f: Flags, out: Out, version: string): Promise<number> {
     out();
     if (fixable) {
       const where = sys.remote ? ` --${sys.where.split(":")[0]} ${sys.where.slice(sys.where.indexOf(":") + 1)}` : "";
-      out(`${PAD}${yellow(`${fixable} agent${fixable === 1 ? "" : "s"} could use the office tools.`)} Run ${bold(`npx agent-visualizer install${where}`)}`);
+      out(`${PAD}${yellow(`${fixable} agent${fixable === 1 ? "" : "s"} could use the office tools.`)} Run ${bold(`npx @pvgomes/agent-visualizer install${where}`)}`);
       out();
     } else if (rows.some((r) => r.installed)) {
       out(`${PAD}${green("All set.")}`);

@@ -1,7 +1,7 @@
 /*
  * What command each agent should launch for the MCP server. From an npx
  * cache the CLI's own path is temporary, so agents get `npx -y
- * agent-visualizer@<this exact version> mcp`; from a global install or a checkout
+ * @pvgomes/agent-visualizer@<this exact version> mcp`; from a global install or a checkout
  * they get the absolute node + dist/cli.js paths, which work before the
  * package is even published. Remote installs always use npx: our paths mean
  * nothing there. The npx form is pinned, never @latest, so a later release
@@ -17,7 +17,7 @@ import type { AgentKind } from "../shared/events.ts";
 import { readServiceFile } from "../control/service.ts";
 
 export const SERVER_NAME = "agent-visualizer";
-export const PACKAGE_NAME = "agent-visualizer";
+export const PACKAGE_NAME = "@pvgomes/agent-visualizer";
 
 /** The spec agents run with npx: this exact version. */
 export function npxPackage(version: string): string {
@@ -48,7 +48,7 @@ const SERVICE_COPY = /\/app\/[^/]+\/dist\/cli\.js$/;
 
 /**
  * What to type to run this CLI again, for the commands its hints name: `agent-visualizer` after a
- * global install, `npx agent-visualizer` from a package-runner cache, where `agent-visualizer` was
+ * global install, `npx @pvgomes/agent-visualizer` from a package-runner cache, where `agent-visualizer` was
  * never put on PATH. The background service's copy isn't on PATH either: it names what installed
  * it, as service.json beside app/ records (npx when that predates the record).
  */
@@ -102,7 +102,7 @@ export function stableNode(execPath = process.execPath, path = process.env.PATH 
 }
 
 /**
- * Is agent-visualizer@<version> on the npm registry? null when the registry can't be asked. An npx
+ * Is @pvgomes/agent-visualizer@<version> on the npm registry? null when the registry can't be asked. An npx
  * command for a version that isn't there fails at every agent launch, and for an unclaimed
  * name it would run whatever someone publishes under it next.
  */
