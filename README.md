@@ -35,7 +35,7 @@ Your browser opens `http://127.0.0.1:4747`. Start an agent in any terminal and i
 - **A raised hand** means the agent is waiting on you.
 - **A flipped table** means a test just failed.
 - **The TV** counts workers, tool calls and flips.
-- **Change location** (next to Hire, or `L`) moves the office to Rio de Janeiro (the default), Dubai, London, New York, Tokyo or Warsaw.
+- **Change location** (next to Add agent, or `L`) moves the office to Rio de Janeiro (the default), Dubai, London, New York, Tokyo or Warsaw.
 - **The clock** shows the city's time; the strip under the TV shows yours.
 - **The view** follows the time in that city: dawn, day, sunset and night.
 
@@ -45,7 +45,7 @@ Works with Claude Code, Codex, Command Code, opencode, Cursor, Droid, Qwen Code 
 
 ## More
 
-- **Hire** on the page starts an agent from the office and gives you its terminal.
+- **Add agent** on the page starts an agent from the office and gives you its terminal.
 - `agent-visualizer install` lets your agents talk to the office (an MCP server and a skill); `agent-visualizer uninstall` removes it.
 - `agent-visualizer --help` lists every option, for example `--port`, `--no-open` or `--no-control` (watch only).
 

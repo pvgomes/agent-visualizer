@@ -303,7 +303,7 @@ export function createSessionPanel(store: ControlStore, opts: SessionPanelOpts):
     for (const t of [termTab, chatTab]) {
       const own = t.dataset.mode === kind;
       t.disabled = !own;
-      t.title = own ? "" : s.mode === "chat" ? "This agent was hired in chat mode" : "This agent was hired in terminal mode";
+      t.title = own ? "" : s.mode === "chat" ? "This agent was added in chat mode" : "This agent was added in terminal mode";
     }
     const mod = kind === "chat" ? loaded.chat : loaded.terminal;
     if (mod) return build(mine, s.id, mod);
@@ -475,7 +475,7 @@ export function createSessionPanel(store: ControlStore, opts: SessionPanelOpts):
 
   function whyDisabled(s: ControlSession): string {
     if (s.status === "running") return "";
-    if (s.status === "exited") return `${agentName(s.agent)} exited. Hire it again to keep going.`;
+    if (s.status === "exited") return `${agentName(s.agent)} exited. Add it again to keep going.`;
     if (s.status === "failed") return `${agentName(s.agent)} couldn't start${s.error ? `: ${s.error}` : "."}`;
     return s.detail || `${agentName(s.agent)} is ${statusWord(s.status).word.toLowerCase()}…`;
   }

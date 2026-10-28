@@ -135,7 +135,7 @@ export function mountChrome(root: HTMLElement, scene: OfficeScene): Chrome {
           onHired: (s) => {
             store.upsert(s);
             openSession(s);
-            say(`Hiring ${agentName(s.agent)}…`);
+            say(`Adding ${agentName(s.agent)}…`);
           },
           openSettings: (tab) => {
             d.close();
@@ -489,7 +489,7 @@ export function mountChrome(root: HTMLElement, scene: OfficeScene): Chrome {
     if (hire) return hire.open();
     loadHire().then(
       (d) => store.state === "enabled" && d.open(),
-      () => say("Couldn't load the Hire dialog. Check the office is still running.", "error"),
+      () => say("Couldn't load the Add agent dialog. Check the office is still running.", "error"),
     );
   }
 

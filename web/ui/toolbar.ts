@@ -83,11 +83,11 @@ export function createToolbar(act: ToolbarActions): Toolbar {
 
   const hire = h(
     "button",
-    { class: "tb tb-hire", attrs: { type: "button", "aria-label": "Hire an agent", "aria-keyshortcuts": "N" }, on: { click: () => act.hire() } },
+    { class: "tb tb-hire", attrs: { type: "button", "aria-label": "Add an agent", "aria-keyshortcuts": "N" }, on: { click: () => act.hire() } },
     icon("hire", 2),
-    h("span", { class: "tb-label", text: "Hire" }),
+    h("span", { class: "tb-label", text: "Add agent" }),
   );
-  hire.dataset.tip = "Hire an agent";
+  hire.dataset.tip = "Add an agent";
   hire.dataset.key = "N";
   const cityName = h("span", { class: "tb-label", text: "Location" });
   const location = h(
@@ -185,7 +185,7 @@ export function createToolbar(act: ToolbarActions): Toolbar {
         b.setAttribute("aria-disabled", String(locked));
       }
       hire.hidden = settings.hidden = state === "unknown" || state === "off";
-      hire.dataset.tip = locked ? lockedTip : "Hire an agent";
+      hire.dataset.tip = locked ? lockedTip : "Add an agent";
       settings.dataset.tip = locked ? lockedTip : "Settings: logins, keys, cloud, service";
       hire.dataset.key = locked ? "" : "N";
       settings.dataset.key = "";

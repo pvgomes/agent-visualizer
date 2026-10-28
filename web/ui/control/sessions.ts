@@ -21,7 +21,7 @@ export function createSessionList(store: ControlStore, opts: { onPick(s: Control
   const el = h(
     "div",
     { class: "sl glass", attrs: { hidden: true, role: "dialog", "aria-label": "Agents the office started" } },
-    h("header", { class: "sl-head" }, h("span", { class: "panel-label", text: "Your agents" }), h("button", { class: "btn btn-quiet btn-sm", attrs: { type: "button" }, text: "Hire", on: { click: () => { close(); opts.onHire(); } } })),
+    h("header", { class: "sl-head" }, h("span", { class: "panel-label", text: "Your agents" }), h("button", { class: "btn btn-quiet btn-sm", attrs: { type: "button" }, text: "Add agent", on: { click: () => { close(); opts.onHire(); } } })),
     list,
   );
   let anchor: HTMLElement | null = null;
@@ -29,7 +29,7 @@ export function createSessionList(store: ControlStore, opts: { onPick(s: Control
   function render(): void {
     list.replaceChildren();
     const all = store.list();
-    if (!all.length) list.append(h("li", { class: "sl-empty", text: "Nobody yet. Hire an agent and it shows up here." }));
+    if (!all.length) list.append(h("li", { class: "sl-empty", text: "Nobody yet. Add an agent and it shows up here." }));
     for (const s of all) {
       const st = statusWord(s.status);
       list.append(

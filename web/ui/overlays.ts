@@ -10,7 +10,7 @@ export interface EmptyCard {
   el: HTMLElement;
   show(kind: "empty" | "offline"): void;
   hide(): void;
-  /** Whether "Hire your first agent" can be used here (locked: shown with the reason). */
+  /** Whether "Add your first agent" can be used here (locked: shown with the reason). */
   setControl(state: "enabled" | "locked" | "off" | "unknown", lockedTip: string): void;
 }
 
@@ -28,7 +28,7 @@ export function createEmpty(opts: { onHire(): void } = { onHire: () => undefined
     copyLabel,
   );
   const hint = h("p", { class: "empty-hint", text: "or watch a demo office" });
-  const hireBtn = h("button", { class: "btn btn-primary empty-hire", attrs: { type: "button" }, on: { click: () => opts.onHire() } }, icon("hire", 1), h("span", { text: "Hire your first agent" }), h("kbd", { text: "N" }));
+  const hireBtn = h("button", { class: "btn btn-primary empty-hire", attrs: { type: "button" }, on: { click: () => opts.onHire() } }, icon("hire", 1), h("span", { text: "Add your first agent" }), h("kbd", { text: "N" }));
   const lockNote = h("p", { class: "empty-lock", attrs: { hidden: true } }, icon("lock", 1), h("span"));
   const hireBox = h("div", { class: "empty-cta", attrs: { hidden: true } }, hireBtn, lockNote);
   const el = h(
@@ -143,7 +143,7 @@ export interface HelpSheet {
 }
 
 const KEYS: [string, string][] = [
-  ["N", "Hire an agent"],
+  ["N", "Add an agent"],
   ["L", "Change location: Rio, Dubai, London, New York, Tokyo, Warsaw"],
   ["1 2 3", "Allow · always allow · deny, when an agent asks"],
   ["C", "CRT scanlines"],
