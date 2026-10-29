@@ -192,6 +192,13 @@ export const AGENT_FACTS: Record<AgentKind, AgentFacts> = {
     installCmd: "curl https://cursor.com/install -fsS | bash",
     keyNames: ["CURSOR_API_KEY"],
   },
+  copilot: {
+    bins: ["copilot"],
+    npm: "@github/copilot",
+    installCmd: "npm i -g @github/copilot",
+    nodeMin: 22,
+    keyNames: ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
+  },
 };
 
 /* -------------------------------------------------------------- context */

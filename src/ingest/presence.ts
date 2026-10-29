@@ -26,6 +26,12 @@ export interface AgentProcess {
   tty?: string | null;
   /** Epoch ms, from ps's elapsed time (second resolution). */
   startedAt?: number;
+  /**
+   * Run by an editor (Cursor's background agent worker, VS Code's Copilot runtime), not a
+   * terminal: one process serves every chat in the window, so it says nothing about how many
+   * of that agent's sessions are open, or where.
+   */
+  app?: boolean;
 }
 
 /** An agent process from scanProcesses(): cwd is null when it couldn't be read. */
@@ -53,6 +59,8 @@ const BINARIES: Record<string, AgentKind> = {
   gemini: "gemini",
   qwen: "qwen",
   "cursor-agent": "cursor",
+  copilot: "copilot",
+  "copilot-runtime": "copilot",
 };
 
 /** Package paths of agents that run as a script under a JS runtime. */
@@ -63,6 +71,7 @@ const SCRIPTS: [RegExp, AgentKind][] = [
   [/@qwen-code\/qwen-code\//, "qwen"],
   [/[\\/]opencode-ai\//, "opencode"],
   [/[\\/]command-?code[\\/]/, "commandcode"],
+  [/@github\/copilot[\\/]/, "copilot"],
 ];
 const RUNTIMES = new Set(["node", "bun", "deno"]);
 
@@ -86,14 +95,28 @@ function program(argv: string[]): string[] {
 
 /** The agent a command line belongs to, or null. */
 export function matchAgent(args: string): AgentKind | null {
+  return matchProcess(args)?.agent ?? null;
+}
+
+/**
+ * Where editors keep the agents they run: inside an app bundle or its unpacked asar
+ * (VS Code's copilot-runtime), the editor's own data folder (Cursor's agent worker under
+ * ~/Library/Application Support/Cursor or ~/.config/Cursor), or a remote editor's server.
+ */
+const APP_HOSTED = /\.app\/Contents\/|node_modules\.asar\.unpacked|[\\/](?:Application Support|\.config)[\\/](?:Cursor|Code|Code - Insiders|VSCodium)[\\/]|[\\/]\.(?:cursor|vscode)-server[\\/]/;
+
+/** The agent a command line belongs to, and whether an editor runs it; null for anything else. */
+export function matchProcess(args: string): { agent: AgentKind; app: boolean } | null {
   const argv = program(args.trim().split(/\s+/));
-  const exe = base(argv[0] ?? "");
-  if (Object.hasOwn(BINARIES, exe)) return BINARIES[exe]!;
-  if (!RUNTIMES.has(exe)) return null;
+  const exe = argv[0] ?? "";
+  const app = APP_HOSTED.test(exe);
+  if (Object.hasOwn(BINARIES, base(exe))) return { agent: BINARIES[base(exe)]!, app };
+  if (!RUNTIMES.has(base(exe))) return null;
   // node [flags] <script>: the first non-flag argument is the script.
   const script = argv.slice(1).find((a) => !a.startsWith("-")) ?? "";
-  if (Object.hasOwn(BINARIES, base(script))) return BINARIES[base(script)]!;
-  for (const [re, agent] of SCRIPTS) if (re.test(script)) return agent;
+  const hosted = app || APP_HOSTED.test(script);
+  if (Object.hasOwn(BINARIES, base(script))) return { agent: BINARIES[base(script)]!, app: hosted };
+  for (const [re, agent] of SCRIPTS) if (re.test(script)) return { agent, app: hosted };
   return null;
 }
 
@@ -127,11 +150,11 @@ export function parsePs(out: string, now: number, self = process.pid): { agents:
     const ppid = Number(m[2]);
     parents.set(pid, ppid);
     if (pid === self) continue;
-    const agent = matchAgent(m[5]!);
-    if (!agent) continue;
+    const match = matchProcess(m[5]!);
+    if (!match) continue;
     const tty = m[3] === "?" || m[3] === "??" || m[3] === "-" ? null : m[3]!;
     const age = parseEtime(m[4]!);
-    agents.push({ pid, ppid, agent, tty, startedAt: age === null ? now : now - age });
+    agents.push({ pid, ppid, agent: match.agent, tty, startedAt: age === null ? now : now - age, ...(match.app ? { app: true } : {}) });
   }
   return { agents, parents };
 }

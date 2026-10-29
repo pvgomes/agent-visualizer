@@ -83,7 +83,7 @@ export interface Source {
 
 /** Env vars a source reports; anything else agents read is not needed. */
 export const ENV_VARS = [
-  "HOME", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_DATA_HOME", "GEMINI_CLI_HOME", "AGENT_VISUALIZER_HOME", "QWEN_HOME", "FACTORY_HOME",
+  "HOME", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_DATA_HOME", "GEMINI_CLI_HOME", "AGENT_VISUALIZER_HOME", "QWEN_HOME", "FACTORY_HOME", "COPILOT_HOME",
 ] as const;
 
 /* ------------------------------------------------------------------ local */

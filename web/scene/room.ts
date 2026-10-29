@@ -339,6 +339,12 @@ function rug(g: CanvasRenderingContext2D, b: Block) {
       each(8, 8, (xx, yy, i, j) => { const ox = j % 2 ? 4 : 0; if (xx + ox + 4 < inner.x1) { r(g, xx + ox + 1, yy, 2, 1, border); r(g, xx + ox, yy + 1, 4, 2, pat); r(g, xx + ox + 2, yy + 1, 2, 2, mix(pat, C.ink, 0.35)); } void i; });
       break;
     }
+    case "goggles": {
+      // copilot: rows of little flight goggles
+      frame(2, border);
+      each(10, 7, (xx, yy, i, j) => { const ox = j % 2 ? 5 : 0; if (xx + ox + 6 < inner.x1) { r(g, xx + ox, yy + 1, 2, 2, pat); r(g, xx + ox + 2, yy + 1, 1, 1, border); r(g, xx + ox + 3, yy + 1, 2, 2, pat); } void i; });
+      break;
+    }
     default:
       frame(2, border);
   }

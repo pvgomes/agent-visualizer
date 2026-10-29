@@ -20,7 +20,7 @@ import { flipOwnTable, session, status, type Ctx, type SessionPlan } from "./scr
 import { Sim, sleep, type Handle, type Script } from "./sim.ts";
 
 export const DEFAULT_SEED = 7;
-const ALL_AGENTS: AgentKind[] = ["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor"];
+const ALL_AGENTS: AgentKind[] = ["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot"];
 /** Who works in the demo unless --agents asks for others. */
 const DEMO_AGENTS: AgentKind[] = ["claude", "cursor"];
 /** Local desks the director tries to keep filled. */

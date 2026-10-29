@@ -118,6 +118,13 @@ export const C = {
   cu3: "#45454e",
   cu6: "#a3a3ad",
   cu9: "#edecec",
+  // github copilot: night-sky navy and GitHub blue
+  cp0: "#0d1117",
+  cp1: "#0c2d6b",
+  cp2: "#1f5fbf",
+  cp3: "#2f81f7",
+  cp4: "#79b8ff",
+  cp5: "#cae8ff",
   // cool light: the cloud-room's glass, LED strips
   cyan3: "#3fd9ff",
   cyan4: "#9cefff",
@@ -174,7 +181,7 @@ export function mix(a: string, b: string, t: number): string {
 
 
 /** Rug weaves, one per brand so pods read apart at a glance. */
-export type RugPattern = "diamond" | "checker" | "hex" | "blocks" | "chevron" | "sparkle" | "tri" | "cube";
+export type RugPattern = "diamond" | "checker" | "hex" | "blocks" | "chevron" | "sparkle" | "tri" | "cube" | "goggles";
 
 /** Per-brand colour sets used by rugs, outfits, desks, signs and labels. */
 export interface BrandArt {
@@ -281,6 +288,14 @@ export const BRAND_ART: Record<AgentKind, BrandArt> = {
     chair: [C.cu0, C.cu6], stool: C.cu1,
     kbd: [C.cu3, C.cu6, C.cu9], led: C.cu9, bezel: C.cu0,
     laptop: [C.cu0, C.cu6, C.cu3], plate: C.cu0,
+  },
+  copilot: {
+    // a navy flight jacket with blue goggles
+    main: C.cp1, dark: C.cp0, deep: C.cp0, light: C.cp2, pale: C.cp5, mark: C.cp4, ink: C.cp4,
+    rug: [mix(C.cp0, C.cp2, 0.35), C.cp3, mix(C.cp1, C.cp3, 0.4)], pattern: "goggles",
+    ...slateDesk, trim: C.cp3,
+    chair: [C.cp0, C.cp3], stool: C.cp1,
+    kbd: [C.slate3, C.slate4, C.cp4], led: C.cp4,
   },
 };
 

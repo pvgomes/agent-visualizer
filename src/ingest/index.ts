@@ -24,6 +24,7 @@ import { claudeFileInfo, createClaudeState, parseClaudeLine } from "./claude.ts"
 import { createCodexState, codexSessionId, parseCodexLine } from "./codex.ts";
 import { createCommandCodeState, parseCommandCodeLine } from "./commandcode.ts";
 import { announcement, basename, emit, parseJson, type ParserState, type WorkerCtx } from "./common.ts";
+import { createCopilotState, parseCopilotLine } from "./copilot.ts";
 import { createCursorState, parseCursorLine, type CursorState } from "./cursor.ts";
 import {
   agentRoots, DRIVERS, opencodeDb, outboxDir,
@@ -423,7 +424,7 @@ class Watcher {
       if (c.agent === "droid") return `${dir}/${id}.settings.json`;
       return undefined;
     };
-    const wantsHead = (c: Candidate) => c.agent === "codex" || c.agent === "commandcode" || c.agent === "droid" || (c.agent === "gemini" && !c.doc);
+    const wantsHead = (c: Candidate) => c.agent === "codex" || c.agent === "commandcode" || c.agent === "droid" || c.agent === "copilot" || (c.agent === "gemini" && !c.doc);
     const projRootOf = (c: Candidate) => c.path.split("/chats/")[0]! + "/.project_root";
     for (const c of cands) {
       if (wantsHead(c)) add(`h ${c.path}`, { path: c.path, start: 0, end: HEAD_BYTES });
@@ -568,6 +569,12 @@ class Watcher {
             state.clock = iso(ms);
           },
         };
+      }
+      case "copilot": {
+        const state = createCopilotState({ sessionId: basename(dir) });
+        // The first line (session.start) names the folder; the tail window may not reach it.
+        parseCopilotLine(state, head);
+        return { state, parse: (l) => parseCopilotLine(state, l) };
       }
       case "gemini": {
         const h = parseJson(head);

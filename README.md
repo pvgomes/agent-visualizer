@@ -41,7 +41,7 @@ Your browser opens `http://127.0.0.1:4747`. Start an agent in any terminal and i
 
 ![Change location: Rio de Janeiro, Dubai, London, New York, Tokyo and Warsaw, each with a live postcard of its view and its local time](docs/locations.png)
 
-Works with Claude Code, Codex, Command Code, opencode, Cursor, Droid, Qwen Code and Gemini CLI.
+Works with Claude Code, Codex, Command Code, opencode, Cursor (the editor and cursor-agent), GitHub Copilot (VS Code and the Copilot CLI), Droid, Qwen Code and Gemini CLI. Agents running inside your editor show up just like the ones in a terminal.
 
 ## More
 

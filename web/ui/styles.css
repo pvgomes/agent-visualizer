@@ -27,6 +27,7 @@
   --gemini: #8e75ff;
   --qwen: #615ced;
   --cursor: #edecec;
+  --copilot: #2f81f7;
   /* remote hosts (HOST_BRAND) */
   --ssh: #9aa4b2;
   --daytona: #2ecc71;
@@ -183,6 +184,7 @@ button {
 .logo-gemini { color: var(--gemini); }
 .logo-qwen { color: var(--qwen); }
 .logo-cursor { color: var(--cursor); }
+.logo-copilot { color: var(--copilot); }
 .host-ssh { --host: var(--ssh); }
 .host-daytona { --host: var(--daytona); }
 .host-boat { --host: var(--boat); }
