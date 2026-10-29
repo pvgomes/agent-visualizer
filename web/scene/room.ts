@@ -1,22 +1,20 @@
 /*
  * The room itself. build() paints what only changes with the floor plan into
  * one cached layer: the office (a glass curtain wall onto its city with the
- * lift in a stone core, polished concrete underfoot) and, when remote workers exist, the cloud wing beside it (a
- * glass curtain wall onto the sky, a raised server-room floor with lit seams,
- * the glass partition between the two). Pods are not in that layer: each
- * pod's rug and sign is its own cached bitmap (podBitmap) so pods can glide
- * when the rows reflow. drawLive() paints the moving parts every frame: the
- * clock, rack LEDs, the TV scoreboard (with a scrolling ticker when an agent
- * shouts), the wing's uplink tower and the fibre runs out to every remote pod.
+ * lift in a stone core, polished concrete underfoot). Pods are not in that
+ * layer: each pod's rug and sign is its own cached bitmap (podBitmap) so pods
+ * can glide when the rows reflow; the cloud-room, where remote workers sit, is
+ * a pod drawn as a glass-walled meeting room. drawLive() paints the moving
+ * parts every frame: the clock, rack LEDs and the TV scoreboard (with a
+ * scrolling ticker when an agent shouts).
  */
 import type { AgentKind } from "../../src/shared/events.ts";
-import { HOST_BRAND } from "../../src/shared/events.ts";
-import { BRAND_ART, C, art, mix, rgba, type ArtKey, type BrandArt } from "./palette.ts";
+import { BRAND_ART, C, mix, rgba, type BrandArt } from "./palette.ts";
 import { FONT, MICRO, drawText, fit, measure } from "./font.ts";
 import { pixelLogo, type LogoKind } from "./logos.ts";
 import { MARK_STEP, RUG_TOP, WALL_H, PROP_W, type Block, type Rect } from "./layout.ts";
 import * as P from "./props.ts";
-import { bitmap, hash, rng, type Bitmap } from "./util.ts";
+import { bitmap, rng, type Bitmap } from "./util.ts";
 import type { CityId } from "../cities.ts";
 
 export type { Rect };
@@ -24,8 +22,7 @@ export type { Rect };
 export interface RoomPlan {
   room: Rect;
   main: Rect;
-  wing: Rect | null;
-  /** every hole the sky shows through: office windows and the wing's glass */
+  /** every hole the sky shows through */
   windows: Rect[];
   elevator: { x: number; y: number; doorX: number };
   tv: Rect;
@@ -36,7 +33,6 @@ export interface RoomPlan {
   coffee: { x: number; y: number };
   cooler: { x: number; y: number };
   plants: { x: number; y: number; seed: number }[];
-  uplink: { x: number; y: number } | null;
   /** extra pad around the room in the buffer, for things flying in */
   pad: number;
 }
@@ -45,7 +41,7 @@ export interface RoomPlan {
 export const WIN_TOP = 6;
 export const WIN_BOTTOM = WALL_H - 6;
 
-export function plan(main: Rect, wing: Rect | null, room: Rect): RoomPlan {
+export function plan(main: Rect, room: Rect): RoomPlan {
   const x0 = main.x, x1 = main.x + main.w;
   const elevator = { x: x0 + 12, y: WALL_H, doorX: x0 + 12 + P.ELEV_W / 2 };
   const liftEnd = elevator.x + P.ELEV_W;
@@ -77,23 +73,12 @@ export function plan(main: Rect, wing: Rect | null, room: Rect): RoomPlan {
   // date palms in planters: one by the lift, one by the coffee counter (under the TV, hiding no view)
   const plants: RoomPlan["plants"] = [{ x: coreEnd + 12, y: WALL_H + 8, seed: 3 }];
   if (coffee.x - 7 - (coreEnd + 12) > 30) plants.push({ x: coffee.x - 7, y: WALL_H + 8, seed: 11 });
-  let uplink: RoomPlan["uplink"] = null;
-  if (wing && wing.y === 0) {
-    // the wing's glass wall: tall panes between steel mullions, the uplink tower in front
-    const gx0 = wing.x + 6, gx1 = wing.x + wing.w - 6;
-    const n = Math.max(1, Math.round((gx1 - gx0) / 44));
-    const pw = Math.floor((gx1 - gx0 - (n - 1) * 3) / n);
-    for (let i = 0; i < n; i++) windows.push({ x: gx0 + i * (pw + 3), y: 8, w: pw, h: WALL_H - 14 });
-    uplink = { x: wing.x + 16, y: WALL_H + 6 };
-  } else if (wing) {
-    uplink = { x: wing.x + 14, y: wing.y + 22 };
-  }
   return {
-    room, main, wing, windows, elevator, tv, clock, vista,
+    room, main, windows, elevator, tv, clock, vista,
     rack: { x: rackX, y: WALL_H + 10 },
     coffee,
     cooler: { x: elevator.x + P.ELEV_W + 4, y: WALL_H + 8 },
-    plants, uplink,
+    plants,
     pad: 120,
   };
 }
@@ -119,27 +104,6 @@ function concrete(g: CanvasRenderingContext2D, X0: number, Y0: number, W: number
   for (let x = X0 + T; x < X0 + W; x += T) r(g, x, Y0, 1, H, JOINT);
 }
 
-/** Raised server-room floor: bevelled tiles, perforated vents, glowing seams. */
-function serverFloor(g: CanvasRenderingContext2D, X0: number, Y0: number, W: number, H: number) {
-  const T = 16;
-  const rr = rng(77);
-  for (let ty = 0; ty * T < H; ty++) {
-    for (let tx = 0; tx * T < W; tx++) {
-      const x = X0 + tx * T, y = Y0 + ty * T;
-      const vent = rr() < 0.18;
-      r(g, x, y, T, T, vent ? C.sv1 : C.sv2);
-      r(g, x, y, T, 1, mix(C.sv3, C.sv4, 0.4));
-      r(g, x, y, 1, T, C.sv3);
-      r(g, x + T - 1, y, 1, T, C.sv0);
-      r(g, x, y + T - 1, T, 1, C.sv0);
-      if (vent) for (let j = 3; j < T - 2; j += 3) for (let i = 3; i < T - 2; i += 3) r(g, x + i, y + j, 1, 1, C.sv0);
-    }
-  }
-  // lit seams every few tiles: the floor is the network
-  g.fillStyle = rgba(C.cyan3, 0.22);
-  for (let y = Y0 + T * 3; y < Y0 + H; y += T * 4) g.fillRect(X0, y - 1, W, 1);
-}
-
 /* ---------------------------------------------------------- static layer */
 
 /** Static layer in buffer coordinates (world - origin). `plate` names the city on the wall clock; some cities dress the office up. */
@@ -149,7 +113,6 @@ export function build(p: RoomPlan, origin: { x: number; y: number }, size: { w: 
   g.save();
   g.translate(-origin.x, -origin.y);
   buildOffice(g, p, plate);
-  if (p.wing) buildWing(g, p);
   if (city === "rio") rioColours(g, p);
   g.restore();
   return b;
@@ -277,73 +240,6 @@ function glassSheen(g: CanvasRenderingContext2D, w: Rect) {
   }
 }
 
-function buildWing(g: CanvasRenderingContext2D, p: RoomPlan) {
-  const wg = p.wing!;
-  const below = wg.y > 0;
-  const X0 = wg.x, Y1 = wg.y + wg.h;
-  const floorTop = below ? wg.y + 14 : WALL_H;
-  g.save();
-  g.beginPath();
-  g.rect(X0, floorTop, wg.w, Y1 - floorTop);
-  g.clip();
-  serverFloor(g, X0, floorTop, wg.w, Y1 - floorTop);
-  for (let i = 0; i < 6; i++) {
-    g.fillStyle = rgba(C.sv0, 0.08);
-    g.fillRect(X0, floorTop, wg.w, 10 - i);
-    g.fillRect(X0, Y1 - 6 + i, wg.w, 6 - i);
-  }
-  g.restore();
-
-  if (!below) {
-    // steel curtain wall, glass panes punched through
-    r(g, X0, 0, wg.w, WALL_H, C.steel1);
-    r(g, X0, 0, wg.w, 3, C.sv0);
-    r(g, X0, 3, wg.w, 1, C.steel3);
-    for (const w of p.windows) {
-      if (w.x < X0) continue;
-      g.clearRect(w.x, w.y, w.w, w.h);
-      g.fillStyle = rgba(C.cyan4, 0.06);
-      g.fillRect(w.x, w.y, w.w, w.h);
-      glassSheen(g, w);
-      r(g, w.x - 1, w.y - 1, w.w + 2, 1, C.steel3);
-      r(g, w.x + w.w, w.y, 1, w.h, C.steel2);
-    }
-    // base: a lit kick plate where glass meets floor
-    r(g, X0, WALL_H - 6, wg.w, 6, C.sv1);
-    r(g, X0, WALL_H - 6, wg.w, 1, C.steel3);
-    r(g, X0, WALL_H - 2, wg.w, 2, C.sv0);
-    g.fillStyle = rgba(C.cyan3, 0.5);
-    g.fillRect(X0 + 4, WALL_H - 4, wg.w - 8, 1);
-    // the glass partition between the office and the wing
-    const px = X0 - 12;
-    r(g, px, 0, 12, Y1, C.steel2);
-    r(g, px + 1, 0, 1, Y1, C.steel4);
-    r(g, px + 10, 0, 1, Y1, C.steel1);
-    r(g, px + 3, WALL_H, 6, Y1 - WALL_H, mix(C.blue2, C.steel2, 0.35));
-    g.fillStyle = rgba(C.cyan4, 0.18);
-    for (let y = WALL_H + 6; y < Y1; y += 22) g.fillRect(px + 4, y, 1, 9);
-    g.fillStyle = rgba(C.white, 0.12);
-    g.fillRect(px + 6, WALL_H, 1, Y1 - WALL_H);
-    // posts
-    for (let y = WALL_H; y < Y1; y += 64) { r(g, px + 2, y, 8, 3, C.steel3); r(g, px + 2, y + 2, 8, 1, C.steel1); }
-  } else {
-    // portrait: the wing is a lower deck behind a glass rail
-    r(g, X0, wg.y, wg.w, 14, C.steel1);
-    r(g, X0, wg.y, wg.w, 2, C.steel3);
-    g.fillStyle = rgba(C.cyan3, 0.5);
-    g.fillRect(X0, wg.y + 12, wg.w, 1);
-  }
-  // wing sign: a neon "CLOUD" over the uplink
-  const f = FONT();
-  const sx = below ? X0 + 34 : X0 + 36, sy = below ? wg.y + 3 : 2;
-  const label = "CLOUD";
-  const tw = measure(f, label);
-  r(g, sx - 3, sy, tw + 18, 11, C.sv0);
-  r(g, sx - 3, sy + 10, tw + 18, 1, C.cyan3);
-  cloudGlyph(g, sx, sy + 3, C.cyan4);
-  drawText(g, f, label, sx + 12, sy + 2, C.cyan4);
-}
-
 /** A tiny pixel cloud, 9 x 5. */
 function cloudGlyph(g: CanvasRenderingContext2D, x: number, y: number, col: string) {
   r(g, x + 3, y, 3, 1, col); r(g, x + 1, y + 1, 6, 1, col); r(g, x + 2, y + 1, 1, 1, col);
@@ -356,20 +252,15 @@ const podCache = new WeakMap<Block, { key: string; bm: Bitmap }>();
 /** Overhang around a pod's box in its bitmap (tassels, shadow, sign). */
 export const POD_BM_PAD = 4;
 
-/** The art key a pod's furniture uses: its agent, or its remote host's server style. */
-export function podArt(b: Block): ArtKey {
-  return b.zone === "cloud" && b.host && b.host.kind !== "local" ? (`host-${b.host.kind}` as ArtKey) : b.agent;
-}
-
-/** A pod's rug (or server platform) and hanging sign, cached until it changes. */
+/** A pod's rug (the cloud-room's glass walls and carpet) and hanging sign, cached until it changes. */
 export function podBitmap(b: Block): Bitmap {
-  const key = `${b.rev}|${b.w}x${b.h}|${b.offline}|${b.label}|${b.mix.join()}`;
+  const key = `${b.rev}|${b.w}x${b.h}|${b.label}|${b.mix.join()}`;
   const have = podCache.get(b);
   if (have && have.key === key) return have.bm;
   const bm = bitmap(b.w + POD_BM_PAD * 2, b.h + POD_BM_PAD * 2);
   const g = bm.g;
   g.translate(POD_BM_PAD, POD_BM_PAD);
-  if (b.zone === "cloud") platform(g, b);
+  if (b.zone === "cloud") meetingRoom(g, b);
   else rug(g, b);
   sign(g, b);
   podCache.set(b, { key, bm });
@@ -458,82 +349,57 @@ function rug(g: CanvasRenderingContext2D, b: Block) {
   g.globalAlpha = 1;
 }
 
-/** A remote pod: a raised platform floating over the server floor, rimmed in the host colour. */
-function platform(g: CanvasRenderingContext2D, b: Block) {
-  const kind = b.host?.kind && b.host.kind !== "local" ? b.host.kind : "ssh";
-  const col = HOST_BRAND[kind].color;
-  const x = 0, y = RUG_TOP - 2, w = b.w, h = b.h - RUG_TOP;
-  const dim = b.offline;
-  // hover shadow and the slab's edge
-  g.fillStyle = rgba(C.sv0, 0.6);
-  g.fillRect(x + 3, y + h + 1, w - 2, 3);
-  r(g, x, y + h - 3, w, 4, C.sv0);
-  r(g, x, y, w, h - 2, C.sv1);
-  // deck grid
-  for (let yy = y + 4; yy < y + h - 4; yy += 6) r(g, x + 3, yy, w - 6, 1, C.sv2);
-  for (let xx = x + 4; xx < x + w - 3; xx += 8) r(g, xx, y + 3, 1, h - 7, C.sv2);
-  // rim light in the host colour, brighter on the front edge
-  const rim = dim ? mix(col, C.sv1, 0.7) : col;
-  r(g, x, y, w, 1, mix(rim, C.sv1, 0.4));
-  r(g, x, y, 1, h - 2, mix(rim, C.sv1, 0.5));
-  r(g, x + w - 1, y, 1, h - 2, mix(rim, C.sv1, 0.5));
-  r(g, x, y + h - 3, w, 1, rim);
-  // corner brackets
-  for (const [cx, cy, sx, sy] of [[x + 2, y + 2, 1, 1], [x + w - 3, y + 2, -1, 1], [x + 2, y + h - 5, 1, -1], [x + w - 3, y + h - 5, -1, -1]] as const) {
-    r(g, cx, cy, 3 * sx || 1, 1, rim);
-    r(g, sx > 0 ? cx : cx, sy > 0 ? cy : cy - 2, 1, 3, rim);
-  }
-  // the host mark etched into the deck
-  const em = pixelLogo(kind as LogoKind, 11, mix(rim, C.sv1, 0.45));
-  g.drawImage(em.c, w - 17, b.h - 17);
+/** The cloud-room: a meeting room on the office floor, low carpet inside glass walls with steel posts. */
+function meetingRoom(g: CanvasRenderingContext2D, b: Block) {
+  const x = 0, y = RUG_TOP - 4, w = b.w, h = b.h - RUG_TOP + 3;
+  g.fillStyle = rgba(C.ink, 0.28);
+  g.fillRect(x + 1, y + 2, w, h);
+  r(g, x, y, w, h, CARPET);
+  for (let yy = y + 3; yy < y + h - 2; yy += 4) for (let xx = x + 3 + ((yy >> 2) % 2) * 2; xx < x + w - 3; xx += 4) r(g, xx, yy, 1, 1, CARPET_LT);
+  // glass: a frosted band along the back, clear panes down the sides, a sill along the front
+  g.fillStyle = rgba(C.cyan4, 0.22);
+  g.fillRect(x, y, w, 3);
+  g.fillRect(x, y, 2, h);
+  g.fillRect(x + w - 2, y, 2, h);
+  r(g, x, y + h - 2, w, 2, rgba(C.cyan4, 0.35));
+  r(g, x, y, w, 1, rgba(C.white, 0.35));
+  // steel posts at the corners and every few desks along the back
+  for (const px of [x, x + w - 2]) { r(g, px, y, 2, h, STEEL_LT); r(g, px, y, 1, h, C.slate5); }
+  for (let px = x + 46; px < x + w - 20; px += 46) r(g, px, y, 1, 3, STEEL_LT);
+  cloudGlyph(g, w - 14, b.h - 9, rgba(C.cyan4, 0.55));
 }
 
-/** The platform's name as a cloud pod's sign spells it, in small caps before the sandbox name. */
-const PLATFORM_TAG: Record<string, string> = { ssh: "SSH", daytona: "DAYTONA", boat: "BOAT", railway: "RAILWAY", vercel: "VERCEL" };
+const CARPET = "#2b3446", CARPET_LT = "#33405a";
 
 function sign(g: CanvasRenderingContext2D, b: Block) {
-  const f = FONT(), m = MICRO();
-  const remote = b.zone === "cloud";
-  const kind = remote && b.host?.kind && b.host.kind !== "local" ? b.host.kind : null;
-  const A: BrandArt = remote && kind ? art(`host-${kind}` as ArtKey) : BRAND_ART[b.agent] ?? BRAND_ART.claude;
-  // A cloud pod says which cloud: "RAILWAY edge-cache", the platform in its own colour.
-  const tag = kind ? PLATFORM_TAG[kind] ?? "" : "";
+  const f = FONT();
+  const cloud = b.zone === "cloud";
+  const A: BrandArt = BRAND_ART[b.agent] ?? BRAND_ART.claude;
   // A pod two agents share carries both marks, stepped like a stack of badges.
-  const marks = remote ? [] : b.mix.slice(0, 3);
+  const marks = cloud ? [] : b.mix.slice(0, 3);
   const extra = Math.max(0, marks.length - 1) * MARK_STEP;
-  const tagW = (tag ? measure(m, tag) + 5 : 0) + extra;
-  const maxText = Math.max(24, b.w - 23 - tagW - (b.offline ? 44 : 0));
-  const label = fit(f, b.label, maxText);
-  const tw = measure(f, label) + tagW;
-  const w = tw + 21 + (b.offline ? 44 : 0);
+  const label = fit(f, b.label, Math.max(24, b.w - 23 - extra));
+  const w = measure(f, label) + extra + 21;
   const x = 2, y = 2;
-  const plate = remote ? C.sv0 : A.plate;
-  const edge = remote ? (kind ? HOST_BRAND[kind].color : C.slate4) : A.ink;
-  if (!remote) { r(g, x + 4, y - 5, 1, 5, C.slate2); r(g, x + w - 5, y - 5, 1, 5, C.slate2); }
+  const plate = cloud ? C.ink2 : A.plate;
+  const edge = cloud ? C.cyan3 : A.ink;
+  r(g, x + 4, y - 5, 1, 5, C.slate2); r(g, x + w - 5, y - 5, 1, 5, C.slate2);
   g.fillStyle = rgba(C.ink, 0.25);
   g.fillRect(x + 2, y + 13, w, 3);
   r(g, x + 1, y, w - 2, 13, plate); r(g, x, y + 1, w, 11, plate);
-  r(g, x + 1, y + 12, w - 2, 1, b.offline ? C.slate2 : edge);
+  r(g, x + 1, y + 12, w - 2, 1, edge);
   r(g, x + 1, y, w - 2, 1, mix(plate, C.slate3, 0.4));
-  if (marks.length > 1) {
+  if (cloud) cloudGlyph(g, x + 3, y + 4, C.cyan4);
+  else if (marks.length > 1) {
     // back to front, so the pod's own mark is on top
     for (let i = marks.length - 1; i >= 0; i--) {
       const a = marks[i]!;
-      const lg = pixelLogo(a as LogoKind, 9, b.offline ? C.slate3 : (BRAND_ART[a] ?? BRAND_ART.claude).ink);
+      const lg = pixelLogo(a as LogoKind, 9, (BRAND_ART[a] ?? BRAND_ART.claude).ink);
       r(g, x + 2 + i * MARK_STEP, y + 1, 11, 11, plate);
       g.drawImage(lg.c, x + 3 + i * MARK_STEP, y + 2);
     }
-  } else {
-    const logoKind = (kind ?? b.agent) as LogoKind;
-    const lg = pixelLogo(logoKind, 9, b.offline ? C.slate3 : remote ? HOST_BRAND[kind!]?.color ?? C.slate4 : A.ink);
-    g.drawImage(lg.c, x + 3, y + 2);
-  }
-  if (tag) drawText(g, m, tag, x + 15, y + 4, b.offline ? C.slate3 : HOST_BRAND[kind!]?.color ?? C.slate4);
-  drawText(g, f, label, x + 15 + tagW, y + 3, b.offline ? C.slate3 : C.white);
-  if (b.offline) {
-    P.unplugged(g, x + 18 + tw, y + 3, 0);
-    drawText(g, MICRO(), "OFFLINE", x + 34 + tw, y + 4, C.red3);
-  }
+  } else g.drawImage(pixelLogo(b.agent as LogoKind, 9, A.ink).c, x + 3, y + 2);
+  drawText(g, f, label, x + 15 + extra, y + 3, cloud ? C.cyan4 : C.white);
 }
 
 /** Where a pod's sign sits, relative to the pod's top-left (for the vector overlay). */
@@ -702,77 +568,4 @@ function tvScreen(g: CanvasRenderingContext2D, tv: Rect, t: number, b: Board) {
 /** The bitmap fonts are ASCII plus a few symbols; emoji and the like are dropped. */
 export function asciiOnly(s: string): string {
   return s.replace(/[^\x20-\x7e·…→✓✗♥⌘]/gu, "").replace(/\s+/g, " ").trim();
-}
-
-/**
- * The wing's uplink tower and a fibre from it to every remote pod, with data
- * pulses running out to pods whose crews are busy. Drawn on the floor, under
- * the pods.
- */
-export function drawFibres(g: CanvasRenderingContext2D, p: RoomPlan, blocks: Iterable<Block>, t: number, busy: (b: Block) => number) {
-  const u = p.uplink;
-  if (!u || !p.wing) return;
-  for (const b of blocks) {
-    if (b.zone !== "cloud" || b.alpha <= 0) continue;
-    const kind = b.host?.kind && b.host.kind !== "local" ? b.host.kind : "ssh";
-    const col = HOST_BRAND[kind].color;
-    const px = Math.round(b.x) + 6, py = Math.round(b.y) + RUG_TOP - 2;
-    const gy = Math.round(b.y) - 6;
-    const pts: [number, number][] = [[u.x + 4, u.y + 2], [u.x + 4, gy], [px, gy], [px, py]];
-    const dead = b.offline;
-    g.globalAlpha = b.alpha;
-    // the cable: a dark sheath with a thin lit core
-    let len = 0;
-    for (let i = 1; i < pts.length; i++) {
-      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
-      const xa = Math.min(x0, x1), ya = Math.min(y0, y1);
-      const w = Math.abs(x1 - x0) + 1, h = Math.abs(y1 - y0) + 1;
-      r(g, xa - (w === 1 ? 1 : 0), ya - (h === 1 ? 1 : 0), w + (w === 1 ? 2 : 0), h + (h === 1 ? 2 : 0), C.sv0);
-      g.fillStyle = dead ? C.sv3 : rgba(col, 0.55);
-      g.fillRect(xa, ya, w, h);
-      len += w + h - 2;
-    }
-    // pulses
-    const rate = dead ? 0 : busy(b);
-    if (rate > 0) {
-      const n = 1 + Math.round(rate * 3);
-      for (let k = 0; k < n; k++) {
-        let d = ((t * (0.05 + rate * 0.07) + k * (len / n) + hash(b.key) % 97) % len);
-        for (let i = 1; i < pts.length; i++) {
-          const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
-          const seg = Math.abs(x1 - x0) + Math.abs(y1 - y0);
-          if (d <= seg) {
-            const f = seg ? d / seg : 0;
-            const x = Math.round(x0 + (x1 - x0) * f), y = Math.round(y0 + (y1 - y0) * f);
-            r(g, x - 1, y - 1, 3, 3, rgba(col, 0.45));
-            r(g, x, y, 1, 1, C.white);
-            break;
-          }
-          d -= seg;
-        }
-      }
-    }
-    g.globalAlpha = 1;
-  }
-}
-
-/** The uplink tower at the wing's back wall: a column of light the fibres plug into. */
-export function drawUplink(g: CanvasRenderingContext2D, p: RoomPlan, t: number, activity: number) {
-  const u = p.uplink;
-  if (!u) return;
-  const x = u.x - 4, base = u.y + 6;
-  const top = p.wing && p.wing.y === 0 ? 14 : u.y - 18;
-  P.floorShadow(g, x - 1, base - 1, 18, 4);
-  r(g, x, top, 16, base - top, C.sv1);
-  r(g, x, top, 16, 2, C.sv4);
-  r(g, x + 1, top + 2, 1, base - top - 2, C.sv3);
-  r(g, x + 14, top + 2, 1, base - top - 2, C.sv0);
-  // the light core breathes with the office's activity
-  const h = base - top - 8;
-  for (let i = 0; i < h; i++) {
-    const ph = (Math.sin(t * (0.004 + activity * 0.01) - i * 0.25) + 1) / 2;
-    r(g, x + 6, top + 4 + i, 4, 1, mix(C.sv3, C.cyan3, 0.25 + 0.75 * ph * (0.4 + activity * 0.6)));
-  }
-  r(g, x + 7, top + 4, 2, h, rgba(C.white, 0.25));
-  r(g, x + 2, base - 4, 12, 2, C.sv0);
 }

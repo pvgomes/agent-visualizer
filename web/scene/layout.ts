@@ -1,13 +1,12 @@
 /*
- * Where everything sits. Every pod ("block") belongs to one project (or, in
- * the cloud wing, one remote host): two agents on the same repo share a pod,
+ * Where everything sits. Every pod ("block") belongs to one project: two agents on the same repo share a pod,
  * each at a desk in its own colours, both marks on the sign. A pod is sized to its crew:
  * one desk per session, an intern bench that grows with its subagents, no
  * empty stations. A bench seats MAX_BENCH; a busy pod's overflow interns go
  * to a shared hot desk at the end of the pod (more hot desks as it grows), so
- * nobody is ever left standing. Pods are shelf-packed into rows in creation order, local
- * pods in the office, remote pods in the glass-walled cloud wing beside it
- * (below it on portrait screens). On a portrait screen the office is packed
+ * nobody is ever left standing. Everyone working in a cloud sandbox or over
+ * ssh shares one pod, the glass-walled cloud-room, a meeting room on the same
+ * floor. Pods are shelf-packed into rows in creation order. On a portrait screen the office is packed
  * for the biggest picture rather than the closest shape: the room may be
  * narrower, and a pod too wide for it wraps its desks into rows (classroom
  * style) instead of shrinking the whole floor to fit one long pod. When a
@@ -32,9 +31,6 @@ export const BOTTOM_MARGIN = 16;
 export const ROOM_MIN_W = 330;
 /** A portrait office may be this narrow: the wall keeps its lift, TV, clock and rack. */
 export const ROOM_MIN_W_TALL = 240;
-/** Glass partition between the office and the cloud wing. */
-export const PARTITION = 12;
-export const WING_PAD = 24;
 
 export const DESK_W = 36;
 /** Desk top-left y, relative to the pod's top edge. */
@@ -66,8 +62,8 @@ const BENCH_LINGER = 14000;
 
 export type Zone = "local" | "cloud";
 export type SeatKind = "main" | "intern";
-export type PodProp = "plant" | "cabinet" | "board" | "printer" | "server" | "cooler";
-export type DecorKind = "lounge" | "pingpong" | "arcade" | "books" | "plants" | "beanbags" | "racks";
+export type PodProp = "plant" | "cabinet" | "board" | "printer" | "cooler";
+export type DecorKind = "lounge" | "pingpong" | "arcade" | "books" | "plants" | "beanbags";
 
 export interface Pt { x: number; y: number }
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -100,7 +96,6 @@ export interface Block {
   /** Every agent with a desk here, in desk order (more than one: both marks on the sign). */
   mix: AgentKind[];
   project: string;
-  host?: Host;
   label: string;
   /** shown position (glides) and target */
   x: number;
@@ -116,7 +111,6 @@ export interface Block {
   propY: number;
   alpha: number;
   dying: boolean;
-  offline: boolean;
   /** bumps whenever the pod's rug/sign must be repainted */
   rev: number;
 }
@@ -126,9 +120,8 @@ export interface Decor { kind: DecorKind; x: number; y: number; w: number; seed:
 const signW = (label: string, marks = 1) => 22 + [...label].length * 6 + (marks - 1) * MARK_STEP;
 /** How far each extra mark on a shared pod's sign is stepped right. */
 export const MARK_STEP = 8;
-/** Room a cloud pod's sign needs for its platform tag ("RAILWAY ", 3x5 caps at 4 px a letter). */
-const TAG_LEN: Record<string, number> = { ssh: 3, daytona: 7, boat: 4, railway: 7, vercel: 6 };
-export const tagW = (b: { zone: Zone; host?: Host }) => (b.zone === "cloud" && b.host && b.host.kind !== "local" ? (TAG_LEN[b.host.kind] ?? 0) * 4 + 4 : 0);
+/** The one pod every remote worker sits in. */
+export const CLOUD_ROOM = "cloud-room";
 const stationW = (s: Station) => (s.hot ? Math.max(1, s.seats) * SEAT_W : DESK_W + (s.seats ? BENCH_GAP + s.seats * SEAT_W : 0));
 /** Where a station's bench starts, relative to the station. */
 export const benchDX = (s: Station) => (s.hot ? 0 : DESK_W + BENCH_GAP);
@@ -187,27 +180,23 @@ function podShape(b: Block, cap = Infinity): Shape {
     let x = POD_PAD;
     for (const i of r) { ox[i] = x; oy[i] = k * DESK_ROW; x += ws[i] + STATION_GAP; }
   });
-  const sign = signW(b.label, b.zone === "local" ? Math.min(3, b.mix.length) : 1) + tagW(b) + (b.offline ? 40 : 0);
+  const sign = signW(b.label, b.zone === "local" ? Math.min(3, b.mix.length) : 1);
   const w = Math.max(contentW(ws, rows), Math.min(sign, 160), 58);
   // a lived-in pod: fill spare rug at the end of the last desk row with something, never an empty desk
   const spare = w - (rowSpan(ws, rows[rows.length - 1]) + POD_PAD * 2);
   const props: PodProp[] = [];
   const h = hash(b.key);
-  if (b.zone === "cloud") {
-    if (spare >= 14) props.push("server");
-    if (spare >= 30) props.push("server");
-  } else {
-    const pool: PodProp[] = ["plant", "board", "cabinet", "printer", "cooler", "plant"];
-    let left = spare;
-    let i = 0;
-    while (left >= 16 && props.length < 3) {
-      const p = pool[(h + i * 7) % pool.length];
-      const pw = PROP_W[p];
-      if (pw <= left - 2) { props.push(p); left -= pw + 3; }
-      else if (left >= PROP_W.plant + 2) { props.push("plant"); left -= PROP_W.plant + 3; }
-      else break;
-      i++;
-    }
+  // the cloud-room is a meeting room: its spare floor stays clear
+  const pool: PodProp[] = b.zone === "cloud" ? [] : ["plant", "board", "cabinet", "printer", "cooler", "plant"];
+  let left = spare;
+  let i = 0;
+  while (pool.length && left >= 16 && props.length < 3) {
+    const p = pool[(h + i * 7) % pool.length];
+    const pw = PROP_W[p];
+    if (pw <= left - 2) { props.push(p); left -= pw + 3; }
+    else if (left >= PROP_W.plant + 2) { props.push("plant"); left -= PROP_W.plant + 3; }
+    else break;
+    i++;
   }
   const extra = (rows.length - 1) * DESK_ROW;
   return { w, h: POD_H + extra, rows: rows.length, ox, oy, props, propY: extra };
@@ -225,7 +214,6 @@ function podCaps(bs: Block[]): number[] {
 
 /** Pods shelf-packed into rows no wider than maxW; a row is as tall as its tallest pod. */
 interface Packing { rows: Block[][]; w: number; rowW: number[]; rowH: number[] }
-type Wing = Packing & { W: number; H: number };
 
 function shelf(bs: Block[], shapes: Map<Block, Shape>, maxW: number): Packing {
   const rows: Block[][] = [];
@@ -285,14 +273,13 @@ export class Layout {
   decor: Decor[] = [];
   /** width / height the packer aims for (the camera's free area) */
   aspect = 16 / 10;
-  /** portrait: the cloud wing goes below the office instead of beside it */
+  /** portrait: pods may wrap their desks into rows to frame bigger */
   tall = false;
   /** structural version: room size, pods added or removed */
   version = 0;
   /** bumps on every reflow, so walkers can re-route to their moved seats */
   packs = 0;
   main: Rect = { x: 0, y: 0, w: ROOM_MIN_W, h: FLOOR_TOP + POD_H + BOTTOM_MARGIN };
-  wing: Rect | null = null;
   private seats = new Map<string, Seat>();
   private nextPos = 0;
   private dirty = true;
@@ -313,15 +300,14 @@ export class Layout {
 
   private podFor(agent: AgentKind, project: string, host: Host | undefined, now: number): Block {
     if (host && host.kind !== "local") {
-      const key = "host:" + host.id;
-      const have = this.blocks.get(key);
+      const have = this.blocks.get(CLOUD_ROOM);
       if (have) { have.dying = false; return have; }
-      return this.newBlock(key, "cloud", agent, project, host, cloudLabel(host));
+      return this.newBlock(CLOUD_ROOM, "cloud", agent, CLOUD_ROOM, CLOUD_ROOM);
     }
     for (let n = 0; n < 20; n++) {
       const key = `local:${project}:${n}`;
       const b = this.blocks.get(key);
-      if (!b) return this.newBlock(key, "local", agent, project, undefined, n ? `${project} ${n + 1}` : project);
+      if (!b) return this.newBlock(key, "local", agent, project, n ? `${project} ${n + 1}` : project);
       const desks = b.stations.filter((s) => !s.hot);
       if (desks.length < MAX_STATIONS || desks.some((s) => !s.main && !s.interns.some(Boolean))) {
         b.dying = false;
@@ -329,13 +315,13 @@ export class Layout {
       }
     }
     void now;
-    return this.newBlock(`local:${project}:x${this.nextPos}`, "local", agent, project, undefined, project);
+    return this.newBlock(`local:${project}:x${this.nextPos}`, "local", agent, project, project);
   }
 
-  private newBlock(key: string, zone: Zone, agent: AgentKind, project: string, host: Host | undefined, label: string): Block {
+  private newBlock(key: string, zone: Zone, agent: AgentKind, project: string, label: string): Block {
     const b: Block = {
-      key, pos: this.nextPos++, zone, agent, mix: [agent], project, host, label,
-      x: NaN, y: NaN, tx: 0, ty: 0, w: 0, h: POD_H, stations: [], props: [], propY: 0, alpha: 0, dying: false, offline: false, rev: 0,
+      key, pos: this.nextPos++, zone, agent, mix: [agent], project, label,
+      x: NaN, y: NaN, tx: 0, ty: 0, w: 0, h: POD_H, stations: [], props: [], propY: 0, alpha: 0, dying: false, rev: 0,
     };
     this.blocks.set(key, b);
     this.dirty = true;
@@ -431,32 +417,13 @@ export class Layout {
     this.version++;
   }
 
-  setOffline(hostId: string, offline: boolean, now: number) {
-    const b = this.blocks.get("host:" + hostId);
-    if (!b || b.offline === offline) return;
-    b.offline = offline;
-    b.rev++;
-    this.dirty = true;
-    // back online: a ghost desk kept for the dark pod may now be cleared away
-    if (!offline) for (const st of b.stations) if (st.emptyAt === Infinity) st.emptyAt = now;
-  }
-
-  /** An empty, dimmed pod for a remote that dropped while nobody worked there. */
-  ghostHost(host: Host, agent: AgentKind) {
-    const key = "host:" + host.id;
-    if (this.blocks.has(key)) return;
-    const b = this.newBlock(key, "cloud", agent, host.name, host, cloudLabel(host));
-    b.offline = true;
-    b.stations.push({ main: null, interns: [], seats: 0, ox: 0, x: NaN, oy: 0, y: NaN, emptyAt: Infinity, benchAt: 0 });
-  }
-
   /* ------------------------------------------------------------ update */
 
   /** Trim lingering empties, reflow if needed, glide pods. */
   update(dt: number, now: number) {
     for (const b of this.blocks.values()) {
       const used = (st: Station) => !!st.main || st.interns.some(Boolean) || [...this.seats.values()].some((v) => v.st === st);
-      const keep = b.stations.filter((st) => used(st) || now - st.emptyAt < DESK_LINGER || (b.offline && b.zone === "cloud"));
+      const keep = b.stations.filter((st) => used(st) || now - st.emptyAt < DESK_LINGER);
       if (keep.length !== b.stations.length) { b.stations = keep; this.dirty = true; }
       for (const st of b.stations) {
         let last = 0;
@@ -508,42 +475,24 @@ export class Layout {
     this.packs++;
     const before = this.room();
     const live = [...this.blocks.values()].filter((b) => !b.dying).sort((a, b) => a.pos - b.pos);
-    const local = live.filter((b) => b.zone === "local");
-    const cloud = live.filter((b) => b.zone === "cloud");
     const tall = this.tall;
     const minW = tall ? ROOM_MIN_W_TALL : ROOM_MIN_W;
 
-    type Plan = Packing & { W: number; H: number; wing: Wing | null; score: number; key: string; shapes: Map<Block, Shape> };
+    type Plan = Packing & { W: number; H: number; score: number; key: string; shapes: Map<Block, Shape> };
     const plans: Plan[] = [];
     // A landscape screen packs the pods as they are; a portrait one also tries
     // narrower pods (desks wrapped into rows) and keeps whichever frames biggest.
     for (const cap of tall ? podCaps(live) : [Infinity]) {
       const shapes = new Map(live.map((b) => [b, podShape(b, cap)] as const));
       const wrapped = [...shapes.values()].filter((s) => s.rows > 1).length;
-      // portrait stacks the wing below at the office's width: one option, packed there
-      const wingOpts: (Packing | null)[] = !cloud.length ? [null] : tall ? [shelf(cloud, shapes, Infinity)] : variants(cloud, shapes);
-      for (const p of variants(local, shapes)) {
+      for (const p of variants(live, shapes)) {
         const W = Math.max(minW, p.w + SIDE_MARGIN * 2);
-        const mainH = FLOOR_TOP + floorH(p) + BOTTOM_MARGIN;
-        for (const wp of wingOpts) {
-          let wing: Wing | null = null;
-          let TW = W, H = mainH, balance = 0;
-          if (wp && tall) {
-            const t = shelf(cloud, shapes, Math.max(widest(cloud, shapes), W - WING_PAD * 2));
-            wing = { ...t, W, H: 26 + floorH(t) + BOTTOM_MARGIN };
-            H += wing.H;
-          } else if (wp) {
-            wing = { ...wp, W: wp.w + WING_PAD * 2, H: FLOOR_TOP + floorH(wp) + BOTTOM_MARGIN };
-            TW = W + PARTITION + wing.W;
-            H = Math.max(mainH, wing.H);
-            balance = Math.abs(Math.log(mainH / wing.H)) * 0.2;
-          }
-          const fill = Math.abs(Math.log(TW / H / this.aspect));
-          // portrait: the plan the camera can show biggest (its larger side
-          // against the screen's), then the closest shape, then the fewest wraps
-          const score = tall ? Math.log(Math.max(TW / this.aspect, H)) + fill * 0.12 + wrapped * 0.03 : fill + balance;
-          plans.push({ ...p, W, H, wing, score, shapes, key: `${cap}:${p.rows.length}:${wing?.rows.length ?? 0}` });
-        }
+        const H = FLOOR_TOP + floorH(p) + BOTTOM_MARGIN;
+        const fill = Math.abs(Math.log(W / H / this.aspect));
+        // portrait: the plan the camera can show biggest (its larger side
+        // against the screen's), then the closest shape, then the fewest wraps
+        const score = tall ? Math.log(Math.max(W / this.aspect, H)) + fill * 0.12 + wrapped * 0.03 : fill;
+        plans.push({ ...p, W, H, score, shapes, key: `${cap}:${p.rows.length}` });
       }
     }
     let best = plans.reduce((a, b) => (b.score < a.score ? b : a));
@@ -552,47 +501,17 @@ export class Layout {
     this.planKey = best.key;
     for (const b of live) this.applyShape(b, best.shapes.get(b)!);
 
-    // place the office rows, left-aligned, with decor where a row ends early
-    const mainW = best.W;
+    // place the rows, left-aligned, with decor where a row ends early
     const decor: Decor[] = [];
     let y = FLOOR_TOP;
     best.rows.forEach((row, ri) => {
       let x = SIDE_MARGIN;
       for (const b of row) { this.place(b, x, y); x += b.w + POD_GAP; }
-      this.fillDecor(decor, x, mainW - SIDE_MARGIN, y, ri);
+      this.fillDecor(decor, x, best.W - SIDE_MARGIN, y, ri);
       y += best.rowH[ri] + ROW_GAP;
     });
-    const mainH = this.tall && best.wing ? best.H - best.wing.H : best.H;
-    // a short office next to a tall wing: lounge rows below
-    for (let ri = best.rows.length; ri < 40; ri++, y += POD_H + ROW_GAP) {
-      if (y + POD_H > mainH - BOTTOM_MARGIN) break;
-      this.fillDecor(decor, SIDE_MARGIN, mainW - SIDE_MARGIN, y, ri);
-    }
     this.decor = decor;
-    this.main = { x: 0, y: 0, w: mainW, h: mainH };
-    const wing = best.wing;
-    if (wing) {
-      const wx = this.tall ? 0 : mainW + PARTITION;
-      let wy = this.tall ? this.main.h + 26 : FLOOR_TOP;
-      const wingRight = wx + wing.W - WING_PAD;
-      wing.rows.forEach((row, ri) => {
-        let x = wx + WING_PAD;
-        for (const b of row) { this.place(b, x, wy); x += b.w + POD_GAP; }
-        if (wingRight - x >= 40) decor.push({ kind: "racks", x: x + 6, y: wy, w: wingRight - x - 6, seed: hash(`w${ri}`) });
-        wy += wing.rowH[ri] + ROW_GAP;
-      });
-      // the rest of the wing is the data centre: rows of racks
-      const bottom = (this.tall ? this.main.h + wing.H : best.H) - BOTTOM_MARGIN;
-      for (let ri = wing.rows.length; ri < 40; ri++, wy += POD_H + ROW_GAP) {
-        if (wy + POD_H > bottom) break;
-        decor.push({ kind: "racks", x: wx + WING_PAD, y: wy, w: wing.W - WING_PAD * 2, seed: hash(`w${ri}`) });
-      }
-      this.wing = this.tall
-        ? { x: 0, y: this.main.h, w: mainW, h: wing.H }
-        : { x: wx, y: 0, w: wing.W, h: best.H };
-    } else {
-      this.wing = null;
-    }
+    this.main = { x: 0, y: 0, w: best.W, h: best.H };
     const after = this.room();
     if (after.w !== before.w || after.h !== before.h || after.x !== before.x) {
       // grow at once; shrink only after the pods have glided inside
@@ -642,12 +561,9 @@ export class Layout {
     }
   }
 
-  /** The whole floor plan (office plus wing); held big while pods glide in after a shrink. */
+  /** The whole floor plan; held big while pods glide in after a shrink. */
   room(): Rect {
-    let r: Rect = { ...this.main };
-    if (this.wing) r = union(r, this.wing);
-    if (this.settleRoom) r = union(r, this.settleRoom);
-    return r;
+    return this.settleRoom ? union(this.main, this.settleRoom) : { ...this.main };
   }
 
   /** An aisle to walk down from the corridor to a pod's lane without crossing other pods. */
@@ -661,7 +577,7 @@ export class Layout {
       let ok = x > this.main.x + 4 && x < this.main.x + this.main.w - 4;
       for (const o of this.blocks.values()) {
         if (!ok) break;
-        if (o.zone !== "local" || o.ty >= b.ty) continue;
+        if (o.ty >= b.ty) continue;
         if (x > o.tx - 2 && x < o.tx + o.w + 2 && y1 > o.ty) ok = false;
       }
       if (ok) return x;
@@ -670,12 +586,12 @@ export class Layout {
   }
 }
 
-/** A sandbox's name for its pod sign, without the id suffix some platforms add ("api:8c1d2e" -> "api"). */
+/** A sandbox's name for its worker's tag, without the id suffix some platforms add ("api:8c1d2e" -> "api"). */
 export function cloudLabel(host: Host): string {
   return (host.name || host.kind).replace(/:[0-9a-f]{6}$/i, "") || host.kind;
 }
 
-export const PROP_W: Record<PodProp, number> = { plant: 14, cabinet: 12, board: 22, printer: 16, server: 12, cooler: 10 };
+export const PROP_W: Record<PodProp, number> = { plant: 14, cabinet: 12, board: 22, printer: 16, cooler: 10 };
 
 function union(a: Rect, b: Rect): Rect {
   const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);

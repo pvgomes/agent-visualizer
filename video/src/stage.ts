@@ -177,12 +177,11 @@ export class Engine {
     const L = this.shadow.layout;
     const room = L.room();
     const main = { ...L.main };
-    const wing = L.wing ? { ...L.wing } : null;
-    const plan = R.plan(L.main, L.wing, room);
-    return { room, main, wing, plan };
+    const plan = R.plan(L.main, room);
+    return { room, main, plan };
   }
 
-  /** The pods in the cloud wing, as one rect (where they are headed, not where they glide from). */
+  /** The cloud-room, as a rect (where it is headed, not where it glides from). */
   cloudPods(): Rect | null {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const b of this.shadow.layout.blocks.values()) {
@@ -274,7 +273,7 @@ export class Engine {
     if (L.version !== this.shadowVersion) {
       this.shadowVersion = L.version;
       const room = L.room();
-      this.shadow.setElevatorX(R.plan(L.main, L.wing, room).elevator.doorX);
+      this.shadow.setElevatorX(R.plan(L.main, room).elevator.doorX);
     }
     this.shadow.update(dt);
   }

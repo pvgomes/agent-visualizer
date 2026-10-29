@@ -2,7 +2,7 @@
  * The product tour, cut for understanding: the problem (a wall of terminals),
  * the answer (one command, every agent walks in), then the centrepiece, step
  * by step: hire Command Code into a new Daytona sandbox from the page, watch
- * it beam into the cloud wing, send it a prompt, and in chat mode approve a
+ * it walk into the cloud-room, send it a prompt, and in chat mode approve a
  * command with one key and read the diff. Then a short "and also" montage,
  * the three steps to use it, and the end card. Every step is on screen (the
  * band's step chips) while it happens; the cursor moves at a person's pace
@@ -47,7 +47,7 @@ const chatF = (step: number): Feature => ({ title: "In chat mode, approve with o
 export const F: Record<string, Feature> = {
   one: { title: "One command.", line: "Run ‹npx @pvgomes/agent-visualizer› and every agent you already use walks in.", accent: INK.cyan, logos: LINEUP },
   lapse: { title: "The sandbox spins up.", line: "Daytona creates it, the office installs Command Code and copies your setup.", accent: INK.cyan, tag: "" },
-  beam: { title: "It beams into the cloud wing.", line: "A pod of its own, under a Daytona sign, next to your other sandboxes.", accent: INK.cyan, logos: ["daytona", "vercel", "railway"] },
+  beam: { title: "It walks into the cloud-room.", line: "A desk at the meeting room, next to your other sandboxes.", accent: INK.cyan, logos: ["daytona", "vercel", "railway"] },
   diff: { title: "See every change.", line: "The work log keeps each tool call, with the diff of every edit.", accent: INK.violet },
   interns: { title: "Subagents walk in as interns.", line: "The boss leans back: ‹supervising 3 interns›.", accent: INK.violet },
   needs: { title: "Never miss a waiting agent.", line: "A raised hand, and the ‹needs you› button takes you straight there.", accent: INK.amber },
@@ -94,7 +94,7 @@ function andAlso(dur: number): Shot {
 
 /* ------------------------------------------------------------ office beats */
 
-/** The wing, wide; the new worker beams in; the camera eases in on its pod and holds. */
+/** The cloud-room, wide; the new worker walks in; the camera eases in on its desk and holds. */
 function beamIn(dur: number, at: (e: Engine) => number, closeAt = 1.4): Shot {
   return {
     name: "beam-in",
@@ -108,7 +108,7 @@ function beamIn(dur: number, at: (e: Engine) => number, closeAt = 1.4): Shot {
     update(e, lt) {
       const w = e.findWorker((x) => x.host?.kind === "daytona" && x.agent === "commandcode" && !x.intern);
       const pods = e.cloudPods();
-      // the whole wing, followed as its pods settle (the new one glides in), then in on the new pod
+      // the whole cloud-room, followed as its desks settle, then in on the new desk
       const want: View = pods ? e.fit({ x: pods.x - 8, y: pods.y - 4, w: pods.w + 16, h: pods.h + 8 }, 8) : e.fit(e.geo().room);
       const wide = (e.s.wide as View | undefined) ?? (e.s.wide = { ...want });
       const k = 1 - Math.exp(-(1 / e.fps) * 3);

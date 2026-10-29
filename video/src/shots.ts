@@ -420,7 +420,7 @@ export function setBack(dur: number, o: { text?: string; from?: number; flipAt?:
   };
 }
 
-/** Sandboxes beam in and the office grows a glass cloud wing; the camera pulls back to take it all in. */
+/** Sandboxes join the office's glass cloud-room; the camera pulls back to take it all in. */
 export function cloud(dur: number, o: { at?: number; text?: string; beamAt?: number } = {}): Shot {
   const beamAt = o.beamAt ?? 0.5;
   const atW = o.at ?? T.cloud - beamAt * 1000;
@@ -435,7 +435,7 @@ export function cloud(dur: number, o: { at?: number; text?: string; beamAt?: num
       const fitR = (r: Rect) => e.fit({ x: r.x, y: r.y, w: r.w, h: r.h + (o.text ? 24 : 0) }, pad);
       const start = remember(e, "start", () => fitR(main));
       const cur = remember(e, "cur", () => ({ ...start }));
-      // the beams, close: the wing's pods; then out to the whole floor, office and wing
+      // the arrivals, close: the cloud-room; then out to the whole floor
       const pods = e.cloudPods();
       const close = pods ? inside(e, { ...e.fit(pods, 18), z: Math.min(e.fit(pods, 18).z, tall(e) ? 6 : 5) }, room, 0) : null;
       const target = lt < beamAt ? start : lt < dur - 1.7 && close ? close : fitR(room);

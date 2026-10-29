@@ -2,11 +2,9 @@
  * The office palette. Every pixel the scene draws comes from here (skin and
  * hair ramps included) so the room reads as one hand-painted piece. Brand
  * colours match BRAND in src/shared/events.ts; each agent gets a BrandArt
- * (outfit, rug weave, desk, chair, keyboard), and each remote host kind a
- * server-room variant lit in its HOST_BRAND colour.
+ * (outfit, rug weave, desk, chair, keyboard).
  */
-import type { AgentKind, HostKind } from "../../src/shared/events.ts";
-import { HOST_BRAND } from "../../src/shared/events.ts";
+import type { AgentKind } from "../../src/shared/events.ts";
 
 export const C = {
   // inks
@@ -120,12 +118,7 @@ export const C = {
   cu3: "#45454e",
   cu6: "#a3a3ad",
   cu9: "#edecec",
-  // cloud wing: raised server-room floor and cool light
-  sv0: "#070b16",
-  sv1: "#0d1424",
-  sv2: "#152036",
-  sv3: "#20304e",
-  sv4: "#35507a",
+  // cool light: the cloud-room's glass, LED strips
   cyan3: "#3fd9ff",
   cyan4: "#9cefff",
 } as const;
@@ -181,7 +174,7 @@ export function mix(a: string, b: string, t: number): string {
 
 
 /** Rug weaves, one per brand so pods read apart at a glance. */
-export type RugPattern = "diamond" | "checker" | "hex" | "blocks" | "chevron" | "sparkle" | "tri" | "cube" | "grid";
+export type RugPattern = "diamond" | "checker" | "hex" | "blocks" | "chevron" | "sparkle" | "tri" | "cube";
 
 /** Per-brand colour sets used by rugs, outfits, desks, signs and labels. */
 export interface BrandArt {
@@ -291,29 +284,9 @@ export const BRAND_ART: Record<AgentKind, BrandArt> = {
   },
 };
 
-/** Remote hosts: server-room desks in the cloud wing, lit in the host colour. */
-export type RemoteKind = Exclude<HostKind, "local">;
+/** A desk / rug style: an agent's. */
+export type ArtKey = AgentKind;
 
-export function hostArt(kind: RemoteKind): BrandArt {
-  const col = HOST_BRAND[kind].color;
-  return {
-    main: col, dark: mix(col, C.ink, 0.45), deep: mix(col, C.ink, 0.75), light: mix(col, C.white, 0.35), pale: mix(col, C.white, 0.7),
-    mark: col, ink: mix(col, C.white, 0.15),
-    rug: [C.sv2, col, C.sv3], pattern: "grid",
-    desk: [C.sv3, C.sv2, C.sv1], leg: C.sv0, trim: col,
-    chair: [C.sv1, col], stool: C.sv2,
-    kbd: [C.sv3, C.sv4, col], led: col, bezel: C.sv0,
-    laptop: [C.sv1, C.sv4, C.sv3], plate: C.sv0,
-  };
-}
-
-/** A desk / rug style: an agent's, or a remote host's server pod. */
-export type ArtKey = AgentKind | `host-${RemoteKind}`;
-
-const hostCache = new Map<string, BrandArt>();
 export function art(key: ArtKey): BrandArt {
-  if (!key.startsWith("host-")) return BRAND_ART[key as AgentKind] ?? BRAND_ART.claude;
-  let a = hostCache.get(key);
-  if (!a) hostCache.set(key, (a = hostArt(key.slice(5) as RemoteKind)));
-  return a;
+  return BRAND_ART[key] ?? BRAND_ART.claude;
 }

@@ -9,7 +9,7 @@ Your coding agents as little workers in a pixel-art office, on the 21st floor in
 
 Every Claude Code, Codex, Cursor or other agent session you run gets a desk. You can see at a glance who is working, who is waiting on you, and who just broke the tests.
 
-![The Rio office at sunset: desks for each project, the cloud wing for sandboxes, Sugarloaf and Christ the Redeemer through the glass, a passer-by in the Brazil kit and the live activity feed](docs/rio-office.png)
+![The Rio office: desks for each project, the glass cloud-room for sandboxes, Sugarloaf and Christ the Redeemer through the glass, a passer-by in the Brazil kit and the live activity feed](docs/office-rio.png)
 
 ## Use
 

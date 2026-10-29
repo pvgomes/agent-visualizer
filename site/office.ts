@@ -68,7 +68,7 @@ export interface Office {
   destroy(): void;
 }
 
-/** Ms of virtual time a fresh worker needs to walk from the lift (or beam in) and sit down. */
+/** Ms of virtual time a fresh worker needs to walk from the lift and sit down. */
 const SEATED_LOCAL = 9_000;
 const SEATED_REMOTE = 3_500;
 /** Kinds that set a pose; only the last one held back during a moment is replayed. */
@@ -206,7 +206,7 @@ export function createOffice(mount: HTMLElement, opts: OfficeOptions = {}): Offi
     // its session_start, so the scene can select and follow it straight away
     if (now) sim.runUntil(v);
     const s = { agent, project: project.name, host: box?.host };
-    return { workerId: c.me.workerId, text: remote ? `${who(s)} beamed into the cloud wing` : `${who(s)} walked in from the lift` };
+    return { workerId: c.me.workerId, text: remote ? `${who(s)} walked into the cloud-room` : `${who(s)} walked in from the lift` };
   }
 
   function* intern(parent: Ctx, role: string, life: number): Script {

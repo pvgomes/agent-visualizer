@@ -1,6 +1,6 @@
 /*
  * The office cat. Purely decorative: it wanders between pods (it never goes
- * into the cloud wing, too cold), sits a while,
+ * into the cloud-room: meetings), sits a while,
  * naps in a loaf on the rugs, and bolts when a desk gets flipped nearby.
  * Seeded per page load so every screen recording gets its own cat.
  */

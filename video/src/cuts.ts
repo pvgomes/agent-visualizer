@@ -24,7 +24,7 @@ const main: Cut = {
     supervise(1.5, { at: T.interns + 5_400 }),
     flip(4.0, { impact: 1.5 }),
     setBack(1.5, { text: "a failing test flips the table" }),
-    cloud(4.0, { text: "sandboxes beam into the cloud wing" }),
+    cloud(4.0, { text: "sandboxes meet in the cloud-room" }),
     uiNeedsYou(3.0),
     uiHire(3.5),
     uiApprove(3.0),
@@ -33,7 +33,7 @@ const main: Cut = {
   ],
 };
 
-/** The short cuts for social: the hook, the boot, the money shot, the cloud wing, the card. */
+/** The short cuts for social: the hook, the boot, the money shot, the cloud-room, the card. */
 const short = (name: string, w: number, h: number): Cut => ({
   name,
   w,
@@ -44,7 +44,7 @@ const short = (name: string, w: number, h: number): Cut => ({
     boot(4.2, { holdTight: 1.4, caption: "every agent session walks in from the lift" }),
     flip(4.0, { impact: 1.4 }),
     setBack(1.4, { text: "a failing test flips the table" }),
-    cloud(3.0, { beamAt: 0.35, text: "sandboxes beam into the cloud wing" }),
+    cloud(3.0, { beamAt: 0.35, text: "sandboxes meet in the cloud-room" }),
     end(3.6),
   ],
 });

@@ -19,7 +19,7 @@ export const T = {
   interns: 29_000,
   /** the hero's tests fail: the flip's t0 */
   flip: 58_000,
-  /** first sandbox worker beams into the cloud wing (the wing appears) */
+  /** first sandbox worker walks into the cloud-room (the room appears) */
   cloud: 71_000,
   cloudGap: 160,
   /** a hand goes up: the amber "needs you" */
@@ -60,7 +60,7 @@ export function script(w: World) {
   w.pass("hero", T.flip + 9_500);
   w.resume("hero", T.flip + 12_000);
 
-  // The cloud wing: devops and website on Vercel, incidents-check on Railway.
+  // The cloud-room: devops and website on Vercel, incidents-check on Railway.
   w.hire("devops", w.persona("claude", "search-api", "devops"), T.cloud, 3_200);
   w.hire("website", w.persona("cursor", "chat-bot", "website"), T.cloud + T.cloudGap, 3_200);
   w.hire("incidents", w.persona("cursor", "incidents-check", "incidents-check", 1), T.cloud + T.cloudGap * 2, 3_200);

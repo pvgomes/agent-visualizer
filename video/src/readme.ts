@@ -181,7 +181,7 @@ export const readmeGif: Cut = { name: "readme-gif", w: 960, h: 600, app: { w: 96
 
 /* ------------------------------------------------------------- stills at 2x */
 
-/** The office canvas on its own (the stage's scene, not the app's), close on the cloud wing. */
+/** The office canvas on its own (the stage's scene, not the app's), close on the cloud-room. */
 function cloudStill(dur: number, at: number): Shot & { stillAt: number } {
   return {
     name: "cloud",
@@ -191,11 +191,10 @@ function cloudStill(dur: number, at: number): Shot & { stillAt: number } {
     bed: 0,
     update(e) {
       const pods = e.cloudPods();
-      const { wing } = e.geo();
-      if (!pods || !wing) return;
-      // the wing and its three pods on the right, the glass and the office's edge on the left
+      if (!pods) return;
+      // the cloud-room in the middle of the frame, the office around it
       const cw = 2400, ch = 1500, z = 5;
-      const x = wing.x + wing.w + 8 - cw / 2 / z;
+      const x = pods.x + pods.w / 2;
       const y = pods.y + pods.h / 2 - 4;
       e.view({ x, y, z });
       e.clip = Math.round(e.t * e.fps) === Math.round((e.shotStart + at) * e.fps) ? { x: (e.W - cw) / 2, y: (e.H - ch) / 2, w: cw, h: ch } : null;
@@ -210,9 +209,9 @@ const css = (e: Engine, x: number, y: number, w: number, h: number) => {
 };
 
 const stillShots: (Shot & { stillAt?: number })[] = [
-  // the whole window: the office with its chrome, every desk busy, the cloud wing lit
+  // the whole window: the office with its chrome, every desk busy, the cloud-room full
   uiScript("hero", 1.0, [], { at: T.cloud + 5_000, open: true, cursor: false, still: { at: 0.9 } }),
-  // the cloud wing: the same renderer, framed on the three sandbox pods at a whole zoom
+  // the cloud-room: the same renderer, framed on the sandbox desks at a whole zoom
   cloudStill(1.0, 0.9),
   // the hire dialog, filled in
   uiScript("hire", 1.9, [

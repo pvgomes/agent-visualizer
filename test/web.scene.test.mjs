@@ -124,6 +124,28 @@ const rowsOf = (b) => new Set(b.stations.map((s) => s.oy)).size;
 /** How big auto-fit can draw the room in a free area of this shape (relative units). */
 const scale = (layout, aspect) => { const r = layout.room(); return Math.min(aspect / (r.w + 20), 1 / (r.h + 20)); };
 
+test("remote workers from any host share one cloud-room pod on the office floor", () => {
+  const layout = new Layout();
+  layout.allocMain("local", "claude", "Codes", undefined, 0);
+  const r1 = layout.allocMain("r1", "codex", "api", { kind: "railway", id: "railway:1", name: "edge" }, 0);
+  const r2 = layout.allocMain("r2", "claude", "site", { kind: "vercel", id: "vercel:2", name: "web" }, 0);
+  const sub = layout.allocIntern("r2-sub", "r2", "claude", "site", { kind: "vercel", id: "vercel:2", name: "web" }, 0);
+  for (let t = 0; t < 200; t++) layout.update(16, t * 16);
+  assert.equal(r1.block, r2.block, "one room for every sandbox");
+  assert.equal(sub.block, r2.block, "interns sit on their parent's bench");
+  assert.equal(r1.block.key, "cloud-room");
+  assert.equal(r1.block.label, "cloud-room");
+  assert.equal(r1.remote, true);
+  assert.deepEqual(r1.block.mix, ["codex", "claude"], "each desk keeps its own agent");
+  assert.equal(layout.blocks.size, 2);
+  const room = layout.room();
+  for (const b of layout.blocks.values()) assert.ok(b.x >= room.x && b.x + b.w <= room.x + room.w, `${b.key} is inside the office`);
+  // everyone leaves: the room goes with them
+  for (const id of ["r2-sub", "r1", "r2"]) layout.free(id, 4000);
+  for (let t = 0; t < 1200; t++) layout.update(16, 4000 + t * 16);
+  assert.equal(layout.blocks.has("cloud-room"), false);
+});
+
 test("portrait: a pod too wide for the screen wraps its desks into balanced rows", () => {
   const layout = office(HIRES, PHONE, true);
   const alpha = pod(layout, "alpha");
