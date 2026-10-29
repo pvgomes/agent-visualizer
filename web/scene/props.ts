@@ -1,7 +1,7 @@
 /*
  * Furniture and little things, painted pixel by pixel: desks, monitors (and
  * what is on their screens for each kind of work), chairs, the intern bench
- * and laptops, desk trinkets, plants, the water cooler, coffee machine, server
+ * and laptops, desk trinkets, plants, the coffee machine, server
  * rack, elevator, clock and the floating icons (paper airplane, globe, magnifier,
  * plug, bulb, bubbles). Furniture takes an ArtKey, so every agent brand has
  * its own desk, chair and keyboard. Also the props that fill a pod's spare
@@ -506,22 +506,6 @@ export function plantSmall(g: G, x: number, y: number) {
   r(g, x - 4, y - 6, 8, 1, C.terra3);
   r(g, x - 4, y - 11, 3, 5, C.leaf2); r(g, x + 1, y - 12, 3, 6, C.leaf3); r(g, x - 1, y - 14, 2, 8, C.leaf3);
   r(g, x - 1, y - 14, 1, 2, C.leaf4); r(g, x + 2, y - 12, 1, 2, C.leaf4);
-}
-
-export function waterCooler(g: G, x: number, y: number) {
-  // (x, y) = bottom-left, 10 wide
-  r(g, x, y - 16, 10, 16, C.white);
-  r(g, x, y - 16, 10, 1, C.slate5);
-  r(g, x + 8, y - 15, 2, 15, C.slate5);
-  r(g, x + 2, y - 11, 3, 2, C.slate3);
-  r(g, x + 3, y - 9, 1, 1, C.blue4); r(g, x + 5, y - 9, 1, 1, C.red3);
-  r(g, x, y - 1, 10, 1, C.slate4);
-  // bottle
-  r(g, x + 1, y - 27, 8, 11, C.blue5);
-  r(g, x + 2, y - 28, 6, 1, C.blue5);
-  r(g, x + 3, y - 18, 4, 2, C.blue4);
-  r(g, x + 2, y - 26, 1, 7, lt(C.blue5, 0.5));
-  r(g, x + 1, y - 22, 8, 1, C.blue4);
 }
 
 export function coffeeMachine(g: G, x: number, y: number) {
@@ -1036,16 +1020,6 @@ export function printer(g: G, x: number, y: number, t: number) {
   r(g, x + 12, y - 11, 2, 1, Math.floor(t / 700) % 2 ? C.green4 : C.green2);
 }
 
-export function miniCooler(g: G, x: number, y: number) {
-  // (x, y) = bottom-left, 10 wide water cooler, smaller sibling of the lobby one
-  floorShadow(g, x, y - 1, 10, 3);
-  r(g, x, y - 12, 10, 12, C.white);
-  r(g, x + 8, y - 11, 2, 11, C.slate5);
-  r(g, x + 3, y - 8, 1, 1, C.blue4); r(g, x + 5, y - 8, 1, 1, C.red3);
-  r(g, x + 1, y - 21, 8, 9, C.blue5);
-  r(g, x + 2, y - 20, 1, 7, lt(C.blue5, 0.5));
-}
-
 /** Draws whatever prop sits on a pod's spare rug. (x, y) = bottom-left. */
 export function podProp(g: G, kind: string, x: number, y: number, seed: number, t: number) {
   switch (kind) {
@@ -1053,7 +1027,6 @@ export function podProp(g: G, kind: string, x: number, y: number, seed: number, 
     case "cabinet": filingCabinet(g, x, y); return;
     case "board": whiteboard(g, x, y, seed); return;
     case "printer": printer(g, x, y, t); return;
-    case "cooler": miniCooler(g, x, y); return;
   }
 }
 

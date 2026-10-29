@@ -82,7 +82,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
 
   let clock = 0;
   const crew = new Crew(() => clock);
-  const visitors = new Visitors(crew);
+  const visitors = new Visitors(crew, () => plan.coffee);
   const kicker = new Kicker();
   const sky = new Sky(7);
   const lighting = new Lighting();

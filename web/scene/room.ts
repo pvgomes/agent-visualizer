@@ -31,7 +31,6 @@ export interface RoomPlan {
   vista: { x: number; w: number };
   rack: { x: number; y: number };
   coffee: { x: number; y: number };
-  cooler: { x: number; y: number };
   plants: { x: number; y: number; seed: number }[];
   /** extra pad around the room in the buffer, for things flying in */
   pad: number;
@@ -77,7 +76,6 @@ export function plan(main: Rect, room: Rect): RoomPlan {
     room, main, windows, elevator, tv, clock, vista,
     rack: { x: rackX, y: WALL_H + 10 },
     coffee,
-    cooler: { x: elevator.x + P.ELEV_W + 4, y: WALL_H + 8 },
     plants,
     pad: 120,
   };
@@ -217,12 +215,10 @@ function buildOffice(g: CanvasRenderingContext2D, p: RoomPlan, plate: string) {
   P.elevatorFrame(g, p.elevator.x, p.elevator.y);
   drawText(g, MICRO(), "LIFT", p.elevator.x + 2, p.elevator.y - P.ELEV_H - 17, C.slate4);
 
-  P.waterCooler(g, p.cooler.x, p.cooler.y);
   P.coffeeMachine(g, p.coffee.x, p.coffee.y);
   P.rack(g, p.rack.x, p.rack.y);
   for (const pl of p.plants) P.datePalm(g, pl.x, pl.y, pl.seed);
   g.fillStyle = rgba(C.ink, 0.22);
-  g.fillRect(p.cooler.x - 1, p.cooler.y, 12, 2);
   g.fillRect(p.coffee.x - 1, p.coffee.y, 28, 2);
   g.fillRect(p.rack.x - 1, p.rack.y, 22, 2);
 }

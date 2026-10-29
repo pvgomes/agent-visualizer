@@ -62,7 +62,7 @@ const BENCH_LINGER = 14000;
 
 export type Zone = "local" | "cloud";
 export type SeatKind = "main" | "intern";
-export type PodProp = "plant" | "cabinet" | "board" | "printer" | "cooler";
+export type PodProp = "plant" | "cabinet" | "board" | "printer";
 export type DecorKind = "lounge" | "pingpong" | "arcade" | "books" | "plants" | "beanbags";
 
 export interface Pt { x: number; y: number }
@@ -187,7 +187,7 @@ function podShape(b: Block, cap = Infinity): Shape {
   const props: PodProp[] = [];
   const h = hash(b.key);
   // the cloud-room is a meeting room: its spare floor stays clear
-  const pool: PodProp[] = b.zone === "cloud" ? [] : ["plant", "board", "cabinet", "printer", "cooler", "plant"];
+  const pool: PodProp[] = b.zone === "cloud" ? [] : ["plant", "board", "cabinet", "printer", "plant"];
   let left = spare;
   let i = 0;
   while (pool.length && left >= 16 && props.length < 3) {
@@ -591,7 +591,7 @@ export function cloudLabel(host: Host): string {
   return (host.name || host.kind).replace(/:[0-9a-f]{6}$/i, "") || host.kind;
 }
 
-export const PROP_W: Record<PodProp, number> = { plant: 14, cabinet: 12, board: 22, printer: 16, cooler: 10 };
+export const PROP_W: Record<PodProp, number> = { plant: 14, cabinet: 12, board: 22, printer: 16 };
 
 function union(a: Rect, b: Rect): Rect {
   const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
