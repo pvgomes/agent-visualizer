@@ -100,6 +100,9 @@ export function agentRoots(agent: AgentKind, env: SourceEnv, local = true): stri
     }
     case "opencode":
       return [opencodeDb(env, local)];
+    case "other":
+      // herdr's own agents: no transcripts the office reads
+      return [];
   }
 }
 

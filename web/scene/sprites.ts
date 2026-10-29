@@ -714,6 +714,34 @@ const TORSO: Record<AgentKind, Record<"down" | "up" | "side", string[]>> = {
       ".....oOOOOOoo...",
       ".....OOOOOOOO...",
     ],
+  },  other: {
+    down: [
+      "....OppSSppO....",
+      "....oOooooOo....",
+      "....oooooolo....",
+      "....ooooolll....",
+      "....oooooolo....",
+      "....oOOOOOOo....",
+      "....OOOOOOOO....",
+    ],
+    up: [
+      "....OppppppO....",
+      "....oooooooo....",
+      "....oooooooo....",
+      "....oooooooo....",
+      "....oooooooo....",
+      "....oOOOOOOo....",
+      "....OOOOOOOO....",
+    ],
+    side: [
+      ".....ppSpoo.....",
+      ".....oOoooooo...",
+      ".....oooooool...",
+      ".....oooooooo...",
+      ".....oooooooo...",
+      ".....oOOOOOoo...",
+      ".....OOOOOOOO...",
+    ],
   },
 
 };

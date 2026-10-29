@@ -70,9 +70,20 @@ async function call<T>(method: "GET" | "POST" | "DELETE", path: string, body?: u
 
 const session = (id: string, what: string) => `/sessions/${enc(id)}/${what}`;
 
+/** What the office knows about herdr (src/herdr/bridge.ts); `pane` when that worker runs in a herdr pane. */
+export interface HerdrInfo {
+  available: boolean;
+  mode?: "herd" | "machine";
+  startable?: AgentKind[];
+  pane?: string;
+}
+
 export const api = {
   info: () => call<ControlInfo>("GET", ""),
   hire: (r: HireRequest) => call<ControlSession>("POST", "/hire", r),
+  herdr: (worker?: string) => call<HerdrInfo>("GET", `/herdr${worker ? `?worker=${enc(worker)}` : ""}`),
+  herdrFocus: (worker: string) => call<void>("POST", "/herdr/focus", { worker }),
+  herdrStart: (r: { agent: AgentKind; folder: string; permission: string; prompt?: string }) => call<{ pane: string }>("POST", "/herdr/start", r),
   fs: (path?: string) => call<FsListing>("GET", `/fs${path ? `?path=${enc(path)}` : ""}`),
   input: (id: string, data: string) => call<void>("POST", session(id, "input"), { data }),
   resize: (id: string, cols: number, rows: number) => call<void>("POST", session(id, "resize"), { cols, rows }),

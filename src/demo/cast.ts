@@ -265,6 +265,14 @@ export const TOOLSETS: Record<AgentKind, Toolset> = {
     web: ["web_fetch", "web_search"],
     todoSummary: "Update todos",
   },
+  other: {
+    tools: {
+      read: "read", edit: "edit", write: "write", bash: "bash", search: "grep",
+      glob: "glob", web: "web_fetch", agent: "task", todo: "todo",
+    },
+    web: ["web_fetch"],
+    todoSummary: "Update todos",
+  },
 };
 
 export const MODELS: Record<AgentKind, string[]> = {
@@ -277,6 +285,7 @@ export const MODELS: Record<AgentKind, string[]> = {
   qwen: ["qwen3.5-coder-plus", "qwen3-coder-flash"],
   cursor: ["composer-2", "claude-sonnet-5-5"],
   copilot: ["claude-sonnet-5.5", "gpt-5.5"],
+  other: ["pi"],
 };
 
 /** MCP calls as [server, tool]; summaries read "github.get_issue". */

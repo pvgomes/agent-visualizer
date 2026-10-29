@@ -28,6 +28,7 @@
   --qwen: #615ced;
   --cursor: #edecec;
   --copilot: #2f81f7;
+  --other: #9aa4b2;
   /* remote hosts (HOST_BRAND) */
   --ssh: #9aa4b2;
   --daytona: #2ecc71;
@@ -185,6 +186,7 @@ button {
 .logo-qwen { color: var(--qwen); }
 .logo-cursor { color: var(--cursor); }
 .logo-copilot { color: var(--copilot); }
+.logo-other { color: var(--other); }
 .host-ssh { --host: var(--ssh); }
 .host-daytona { --host: var(--daytona); }
 .host-boat { --host: var(--boat); }

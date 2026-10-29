@@ -11,7 +11,7 @@ import { h, setText } from "../dom.ts";
 import { tidyPath } from "../format.ts";
 import { glyph, icon } from "../icons.ts";
 import { agentColor, agentName, hostLogo, logo } from "../logos.ts";
-import { api, ControlError } from "./api.ts";
+import { api, ControlError, type HerdrInfo } from "./api.ts";
 import { PERMISSIONS, PLACE_NAME, until } from "./format.ts";
 import { railwayChoice, railwayLabel, railwayPicker, type RailwayPick } from "./railway.ts";
 import { createSetupSection } from "./setup.ts";
@@ -35,7 +35,10 @@ const PROVIDERS: Provider[] = ["daytona", "vercel", "railway"];
 const TIMEOUTS = [15, 30, 60, 120];
 const HEADLESS: AgentKind[] = ["claude", "codex", "opencode"];
 
-export function createHire(store: ControlStore, opts: { onHired(s: ControlSession): void; openSettings(tab: "keys" | "cloud" | "agents" | "logins"): void }): HireDialog {
+export function createHire(
+  store: ControlStore,
+  opts: { onHired(s: ControlSession): void; onHerdr?(agent: AgentKind, pane: string): void; openSettings(tab: "keys" | "cloud" | "agents" | "logins"): void },
+): HireDialog {
   /* ---- state ---- */
   let agent: AgentKind = "claude";
   let where: Where = "local";
@@ -55,6 +58,9 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
   /** The real path of the folder being listed (listing.path is for display, with ~). */
   let fsAt: string | undefined;
   let busy = false;
+  /** herdr, when the office talks to it: this Mac's agents can start in a new herdr workspace instead. */
+  let herdr: HerdrInfo | null = null;
+  let inHerdr = false;
 
   /* ---- persistent elements ---- */
   const agentGrid = h("div", { class: "hire-agents", attrs: { role: "radiogroup", "aria-label": "Agent" } });
@@ -139,7 +145,9 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
   const closeX = h("button", { class: "icon-btn", attrs: { type: "button", "aria-label": "Close" } }, glyph("close", 1));
 
   const section = (title: string, ...kids: (Node | null)[]) => h("section", { class: "hire-section" }, h("h3", { class: "hire-h", text: title }), ...kids);
-  const whereSection = section("Where it works", whereTabs, localPane, sandboxPane, sshPane, cwdRow);
+  const herdrBox = h("input", { attrs: { type: "checkbox" }, on: { change: () => { inHerdr = herdrBox.checked; render(); } } }) as HTMLInputElement;
+  const herdrRow = h("label", { class: "hire-hint hire-herdr", attrs: { hidden: true } }, herdrBox, h("span", { text: " Start it in a new herdr workspace (its terminal is there)" }));
+  const whereSection = section("Where it works", whereTabs, localPane, herdrRow, sandboxPane, sshPane, cwdRow);
   // Two columns on a wide screen (who and where | how, and what comes along), one below the other elsewhere.
   const body = h(
     "div",
@@ -229,6 +237,8 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
     sandboxPane.hidden = where !== "sandbox";
     sshPane.hidden = where !== "ssh";
     cwdRow.hidden = where === "local";
+    herdrRow.hidden = !herdrHere();
+    herdrBox.checked = inHerdr;
 
     // this Mac
     setText(folderPath, folder ? tidyPath(folder) : "Pick a folder");
@@ -399,6 +409,12 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
     }
   }
 
+  /** herdr can take this one: the agent on this Mac, herdr running and able to start it. */
+  function herdrHere(): boolean {
+    return where === "local" && !!herdr?.available && !!herdr.startable?.includes(agent);
+  }
+  const toHerdr = () => inHerdr && herdrHere();
+
   function place(): Place | null {
     const cwd = cwdInput.value.trim() || undefined;
     if (where === "local") return folder ? { kind: "local", target: folder } : null;
@@ -422,7 +438,7 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
     const p = place();
     const inRailway = p?.kind === "railway" && p.target === "new" ? railwayLabel(prov("railway"), railwayChoice(prov("railway"), railwayPick)) : "";
     const whereText = !p ? "" : p.kind === "local" ? tidyPath(p.target) : p.kind === "ssh" ? `ssh ${p.target}` : `${PLACE_NAME[p.kind]} · ${p.target === "new" ? `new sandbox${inRailway ? ` in ${inRailway}` : ""}` : sbxName(p.target)}`;
-    setText(summary, [agentName(agent), mode === "chat" ? "chat" : "terminal", whereText, setupSec.on ? "your setup" : ""].filter(Boolean).join(" · "));
+    setText(summary, [agentName(agent), toHerdr() ? "in herdr" : mode === "chat" ? "chat" : "terminal", whereText, setupSec.on && !toHerdr() ? "your setup" : ""].filter(Boolean).join(" · "));
     const why = problem();
     hireBtn.disabled = busy || !!why;
     hireBtn.title = why;
@@ -544,6 +560,21 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
     busy = true;
     err.hidden = true;
     renderSummary();
+    if (toHerdr() && p.kind === "local") {
+      try {
+        const r = await api.herdrStart({ agent, folder: p.target, permission, ...(prompt ? { prompt } : {}) });
+        promptInput.value = "";
+        el.close();
+        opts.onHerdr?.(agent, r.pane);
+      } catch (e) {
+        err.hidden = false;
+        setText(err, e instanceof ControlError ? e.message : "herdr couldn't start the agent.");
+      } finally {
+        busy = false;
+        renderSummary();
+      }
+      return;
+    }
     try {
       const s = await api.hire(req);
       promptInput.value = "";
@@ -564,6 +595,15 @@ export function createHire(store: ControlStore, opts: { onHired(s: ControlSessio
       if (el.open) return;
       setupSec.refresh();
       pickDefaults();
+      void api.herdr().then(
+        (i) => {
+          // herd mode: new agents go to herdr unless the viewer says otherwise
+          if (!herdr && i.available && i.mode === "herd") inHerdr = true;
+          herdr = i;
+          if (el.open) render();
+        },
+        () => {},
+      );
       if (!keysTouched) keys = presetKeys();
       err.hidden = true;
       browsing = false;

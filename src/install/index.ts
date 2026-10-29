@@ -22,10 +22,11 @@ import { REMOTE_KINDS, detectRemotes, resolveRemotes, type RemoteKind, type Remo
 import { localSys, remoteSys, type Sys } from "./sys.ts";
 import { PAD, bold, cyan, dim, green, red, yellow } from "./ui.ts";
 import { doctorRows, runOpen, serviceCommand } from "../control/cli.ts";
+import { runHerdr } from "../herdr/plugin.ts";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-export const SUBCOMMANDS = new Set(["mcp", "install", "uninstall", "doctor", "open"]);
+export const SUBCOMMANDS = new Set(["mcp", "install", "uninstall", "doctor", "open", "herdr"]);
 
 class UsageError extends Error {}
 
@@ -316,6 +317,7 @@ async function publishedOrSay(version: string, dryRun: boolean, out: Out): Promi
 /** Entry point from src/cli.ts. Resolves the exit code (mcp resolves when stdin closes). */
 export async function runSubcommand(cmd: string, argv: string[], version: string): Promise<number> {
   if (cmd === "open") return runOpen(argv, version, (line = "") => void process.stdout.write(`${line}\n`));
+  if (cmd === "herdr") return runHerdr(argv, version, (line = "") => void process.stdout.write(`${line}\n`));
   let f: Flags;
   try {
     f = parse(cmd, argv);

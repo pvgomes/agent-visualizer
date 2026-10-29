@@ -40,7 +40,7 @@ export const RECENT_MAX = 200;
 /** How long an intern lingers after subagent_end so the client can walk it out. */
 export const INTERN_GRACE_MS = 6_000;
 
-const AGENTS = new Set<AgentKind>(["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot"]);
+const AGENTS = new Set<AgentKind>(["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot", "other"]);
 const HOSTS = new Set<HostKind>(["local", "ssh", "daytona", "boat", "railway", "vercel"]);
 const KINDS = new Set<EventKind>([
   "session_start", "prompt", "thinking", "tool_start", "tool_end", "reply", "waiting",

@@ -23,6 +23,8 @@ import { loginShellVars } from "./env.ts";
 import type { Logins } from "./logins.ts";
 import { createSetupCache, shellKeyNames, type SetupCache } from "./setup.ts";
 import { Swr } from "./swr.ts";
+import { terminalLaunch } from "./agents.ts";
+import { HERDR_STARTABLE, type HerdrBridge } from "../herdr/bridge.ts";
 
 export const BIG_BODY = 1 << 20;
 export const SMALL_BODY = 64 << 10;
@@ -58,6 +60,8 @@ export interface ApiDeps {
   hired: HiredFolders;
   service: ServiceControl;
   installer: InstallControl;
+  /** herdr, when the office talks to it. */
+  herdr?: HerdrBridge;
   /** control_info frames for the page. */
   info(patch: Partial<ControlInfo>): void;
   pingMs?: number;
@@ -354,6 +358,54 @@ export function createApi(d: ApiDeps): (req: IncomingMessage, res: ServerRespons
       const iat = d.auth.cookieIat(req.headers.cookie);
       if (iat !== null && Math.floor(d.ctx.now() / 1000) - iat > COOKIE_REFRESH_S) extra["Set-Cookie"] = d.auth.cookie();
       return sendJson(res, 200, await info(), extra);
+    }
+
+    if (rest === "/herdr") {
+      only("GET");
+      const worker = new URL(req.url ?? "/", "http://office").searchParams.get("worker") ?? "";
+      const hd = d.herdr;
+      if (!hd) return sendJson(res, 200, { available: false });
+      const pane = worker ? hd.paneOf(worker) : undefined;
+      return sendJson(res, 200, { available: hd.available(), mode: hd.mode, startable: HERDR_STARTABLE, ...(pane ? { pane } : {}) });
+    }
+
+    if (rest === "/herdr/focus") {
+      only("POST");
+      const b = obj(await readJson(req, SMALL_BODY));
+      if (typeof b.worker !== "string" || !b.worker) throw bad("Which worker?");
+      const hd = need(d.herdr ?? null, "herdr");
+      try {
+        await hd.focus(b.worker);
+      } catch (err) {
+        throw new ControlError(409, (err as Error).message);
+      }
+      return sendJson(res, 204);
+    }
+
+    if (rest === "/herdr/start") {
+      only("POST");
+      const t = d.ctx.now();
+      while (hires.length && t - hires[0]! > 60_000) hires.shift();
+      if (hires.length >= HIRES_PER_MINUTE) throw new ControlError(429, "That's a lot of hiring; wait a minute.");
+      const hd = need(d.herdr ?? null, "herdr");
+      const b = obj(await readJson(req, BIG_BODY));
+      const agent = b.agent as AgentKind;
+      if (!HERDR_STARTABLE.includes(agent)) throw bad("herdr can't start that agent.");
+      if (typeof b.folder !== "string" || !b.folder.trim() || b.folder.includes("\0")) throw bad("Pick the project folder.");
+      const folder = folderUnderHome(expandPath(b.folder.trim(), home), home);
+      const permission = (["default", "acceptEdits", "plan", "bypass"] as const).find((p) => p === b.permission) ?? "default";
+      const prompt = typeof b.prompt === "string" && b.prompt.trim() ? b.prompt.trim().slice(0, 20_000) : undefined;
+      // The agent's own flags and first prompt, as its terminal launch would pass them (minus the binary).
+      const argv = terminalLaunch({ agent, bin: agent, cwd: folder, permission, ...(prompt ? { prompt } : {}) }).argv.slice(1);
+      hires.push(t);
+      try {
+        const r = await hd.start({ agent, folder, args: argv.filter((a): a is string => typeof a === "string") });
+        d.hired.add(folder);
+        d.ctx.log(`started ${agent} in herdr (${r.pane})`);
+        return sendJson(res, 200, r);
+      } catch (err) {
+        throw new ControlError(502, `herdr: ${(err as Error).message}`);
+      }
     }
 
     if (rest === "/hire") {
