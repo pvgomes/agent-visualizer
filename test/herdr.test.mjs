@@ -145,7 +145,9 @@ test("focus and start go to herdr; agents herdr can't start are refused; unreach
 
 test("client: newline-delimited JSON over the socket, herdr's errors as HerdrError; socket path from env or ~/.config", async () => {
   const dir = mkdtempSync(join(tmpdir(), "herdr-sock-"));
-  const path = join(dir, "h.sock");
+  // a Unix socket here, a named pipe on Windows (herdr's own transport there)
+  const win = process.platform === "win32";
+  const path = win ? `\\\\.\\pipe\\herdr-test-${process.pid}` : join(dir, "h.sock");
   const server = createServer((c) => {
     let buf = "";
     c.on("data", (d) => {
@@ -161,14 +163,14 @@ test("client: newline-delimited JSON over the socket, herdr's errors as HerdrErr
     const req = M.herdrClient(path);
     assert.deepEqual(await req("ping"), { type: "pong", version: "0.7.5" });
     await assert.rejects(req("agent.focus", { target: "w0:p0" }), (e) => e instanceof M.HerdrError && e.code === "not_found" && /no such pane/.test(e.message));
-    await assert.rejects(M.herdrClient(join(dir, "missing.sock"))("ping"));
+    await assert.rejects(M.herdrClient(win ? `\\\\.\\pipe\\herdr-missing-${process.pid}` : join(dir, "missing.sock"))("ping"));
   } finally {
     server.close();
     rmSync(dir, { recursive: true, force: true });
   }
   assert.equal(M.herdrSocketPath({ HERDR_SOCKET_PATH: "/s" }, "/h"), "/s");
-  assert.equal(M.herdrSocketPath({}, "/h"), "/h/.config/herdr/herdr.sock");
-  assert.equal(M.herdrSocketPath({ XDG_CONFIG_HOME: "/x" }, "/h"), "/x/herdr/herdr.sock");
+  assert.equal(M.herdrSocketPath({}, "/h"), join("/h", ".config", "herdr", "herdr.sock"));
+  assert.equal(M.herdrSocketPath({ XDG_CONFIG_HOME: "/x" }, "/h"), join("/x", "herdr", "herdr.sock"));
 });
 
 test("plugin settings: herd mode unless office.json says otherwise; name and port pass through, junk is ignored", () => {
