@@ -646,12 +646,29 @@ export function elevatorDoors(g: G, x: number, y: number, open: number, t: numbe
     r(g, x + 2 + inner - lw, y - ELEV_H, 1, ELEV_H, C.slate3);
     r(g, x + 3 + inner - lw, y - ELEV_H + 2, Math.max(0, lw - 3), 1, C.slate5);
   }
-  // indicator: arrow + floor number (the office is on the 21st floor)
+  // indicator: the floor the car is on, and which way it's going (here, on 21, while the doors work)
+  const here = open > 0.02 || ding > 0;
+  const { floor, dir } = here ? { floor: OFFICE_FLOOR, dir: 0 } : liftFloor(t);
   const lit = ding > 0 && Math.floor(t / 150) % 2 === 0;
   const ax = x + 13, ay = y - ELEV_H - 7;
-  const ac = lit ? C.gold3 : C.gold1;
-  r(g, ax + 1, ay, 1, 1, ac); r(g, ax, ay + 1, 3, 1, ac); r(g, ax + 1, ay + 2, 1, 2, ac);
-  drawText(g, MICRO(), "21", ax + 5, ay - 0, lit ? C.gold3 : C.red3);
+  const ac = lit ? C.gold3 : dir ? C.gold2 : C.gold1;
+  if (dir >= 0) { r(g, ax + 1, ay, 1, 1, ac); r(g, ax, ay + 1, 3, 1, ac); r(g, ax + 1, ay + 2, 1, 2, ac); }
+  else { r(g, ax + 1, ay, 1, 2, ac); r(g, ax, ay + 2, 3, 1, ac); r(g, ax + 1, ay + 3, 1, 1, ac); }
+  drawText(g, MICRO(), String(floor), ax + 5, ay - 0, lit ? C.gold3 : C.red3);
+}
+
+const OFFICE_FLOOR = 21, TOP_FLOOR = 42;
+/** One trip: TRIP_MS long, travelling a floor every FLOOR_MS (top to bottom fits), then standing still for the rest. */
+const TRIP_MS = 9_000, FLOOR_MS = 200;
+
+/** Where the car is when nobody here is using it: random trips between floors 1 and TOP_FLOOR. */
+export function liftFloor(t: number): { floor: number; dir: -1 | 0 | 1 } {
+  const k = Math.floor(t / TRIP_MS);
+  const stop = (n: number) => 1 + Math.floor(rng(n * 7919 + 11)() * TOP_FLOOR);
+  const from = stop(k), to = stop(k + 1);
+  const moved = Math.min(Math.abs(to - from), Math.floor((t - k * TRIP_MS) / FLOOR_MS));
+  const dir = moved < Math.abs(to - from) ? (Math.sign(to - from) as -1 | 1) : 0;
+  return { floor: from + Math.sign(to - from) * moved, dir };
 }
 
 /* ----------------------------------------------------------------- clock */

@@ -42,13 +42,14 @@ export const WIN_BOTTOM = WALL_H - 6;
 
 export function plan(main: Rect, room: Rect): RoomPlan {
   const x0 = main.x, x1 = main.x + main.w;
-  const elevator = { x: x0 + 12, y: WALL_H, doorX: x0 + 12 + P.ELEV_W / 2 };
+  const elevator = { x: x0 + 5, y: WALL_H, doorX: x0 + 5 + P.ELEV_W / 2 };
   const liftEnd = elevator.x + P.ELEV_W;
   // Back wall, left to right: the lift, the coffee counter, then the TV hung right by the
   // server rack (the clock above the rack), so the glass from the lift to the TV is clear view.
   const TV_MIN = 96;
   const rackX = x1 - 34;
-  const tvTo = rackX - 4;
+  // a hand's width from the rack, so the clock and its city plate above it have room
+  const tvTo = rackX - 16;
   const tvFrom = liftEnd + 44;
   const tvW = Math.max(TV_MIN, Math.min(main.w >= 460 ? 132 : 108, tvTo - tvFrom));
   const tv = { x: Math.max(tvFrom, tvTo - tvW), y: 10, w: tvW, h: 40 };
@@ -206,14 +207,13 @@ function buildOffice(g: CanvasRenderingContext2D, p: RoomPlan, plate: string) {
 
   // the clock, with a small plate naming the city hung on the same rods above it
   rod(p.clock.x - 8, p.clock.y - 5); rod(p.clock.x + 8, p.clock.y - 5);
-  const pw = Math.max(21, measure(MICRO(), plate) + 4), px0 = p.clock.x - Math.floor(pw / 2);
-  r(g, px0 - 1, p.clock.y - 14, pw + 2, 7, C.ink3);
-  r(g, px0, p.clock.y - 13, pw, 5, C.ink);
-  drawText(g, MICRO(), plate, px0 + Math.floor((pw - measure(MICRO(), plate)) / 2), p.clock.y - 13, C.slate5);
+  const pw = Math.max(21, measure(MICRO(), plate) + 6), px0 = p.clock.x - Math.floor(pw / 2);
+  r(g, px0 - 1, p.clock.y - 17, pw + 2, 8, C.ink3);
+  r(g, px0, p.clock.y - 16, pw, 6, C.ink);
+  drawText(g, MICRO(), plate, px0 + Math.floor((pw - measure(MICRO(), plate)) / 2), p.clock.y - 15, C.slate5);
   P.clockFace(g, p.clock.x, p.clock.y);
 
   P.elevatorFrame(g, p.elevator.x, p.elevator.y);
-  drawText(g, MICRO(), "LIFT", p.elevator.x + 2, p.elevator.y - P.ELEV_H - 17, C.slate4);
 
   P.coffeeMachine(g, p.coffee.x, p.coffee.y);
   P.rack(g, p.rack.x, p.rack.y);
