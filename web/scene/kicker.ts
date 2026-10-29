@@ -3,7 +3,7 @@
  * the corridor in front of the glass, stops in the middle of the office and
  * does keepie-uppies (embaixadinha): foot, foot, knee, foot, head, then one
  * big kick up and a catch, and walks on out the other side. Purely
- * decorative, like the cat.
+ * decorative, like the visitors.
  */
 import { lookFor, sprite, SPRITE_FOOT, SPRITE_W, type Look } from "./sprites.ts";
 import { CORRIDOR_Y } from "./layout.ts";

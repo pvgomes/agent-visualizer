@@ -9,7 +9,7 @@
 import type { CreateOfficeScene, OfficeEvent, OfficeScene, Snapshot } from "../contract.ts";
 import { C, rgba } from "./palette.ts";
 import { Crew, brandInk, type DrawCall } from "./workers.ts";
-import { Cat } from "./cat.ts";
+import { Visitors } from "./visitors.ts";
 import { Kicker } from "./kicker.ts";
 import { Sky, skyAt, weatherToday, type Weather } from "./sky.ts";
 import { DEFAULT_CITY, cityDate, cityHour, cityOf, type CityId } from "../cities.ts";
@@ -82,7 +82,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
 
   let clock = 0;
   const crew = new Crew(() => clock);
-  const cat = new Cat();
+  const visitors = new Visitors();
   const kicker = new Kicker();
   const sky = new Sky(7);
   const lighting = new Lighting();
@@ -323,7 +323,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     const over: DrawCall[] = [];
     crew.draw(calls, over, now);
     decorCalls(calls);
-    cat.draw(calls, now);
+    visitors.draw(calls, now);
     kicker.draw(calls, now);
     calls.sort((a, b) => a.y - b.y);
     for (const c of calls) c.fn(wg);
@@ -424,7 +424,6 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     crew.showFx(clock, (amt) => {
       shake = Math.max(shake, amt);
       if (amt > 6) {
-        cat.startle(clock);
         hitstop = 90;
         pulseAt = performance.now();
       }
@@ -442,7 +441,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     }
     if (cut && (cam.mode !== "auto" || panelOpen || clock > cut.until || !crew.workers.has(cut.id))) cut = null;
     bars = clamp(bars + (cut && director ? 1 : -1) * dt / 350, 0, 1);
-    cat.update(dt, clock, crew.layout.main, [...crew.layout.blocks.values()]);
+    visitors.update(dt, clock, crew.layout.main);
     kicker.update(dtw, clock, crew.layout.main, city === "rio");
     // camera
     if (clock - insetCheck > 1000) {
