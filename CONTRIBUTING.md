@@ -70,13 +70,13 @@ Keep them focused: one agent, one fix or one feature each. Fill in the template,
 
 ## Releasing
 
-For now agent-visualizer installs straight from GitHub (`npx github:pvgomes/agent-visualizer`, `npm install -g github:pvgomes/agent-visualizer`): npm clones `main`, installs the dev dependencies, runs `prepare` (which builds `dist/`) and packs what `files` lists. So `main` must always build.
+For now agent-visualizer installs straight from GitHub (`npx github:pvgomes/agent-visualizer`, or `npm pack github:pvgomes/agent-visualizer` and `npm install -g` the `.tgz`): npm fetches `main`, installs the dev dependencies, runs `prepare` (which builds `dist/`) and packs what `files` lists. So `main` must always build.
 
 The npm package, `@pvgomes/agent-visualizer`, isn't published yet. When it is, cut a release from an up-to-date `main`:
 
 ```sh
 npm version patch        # or minor / major: bumps package.json and tags vX.Y.Z
-npm publish              # prepack builds dist/; publishConfig makes it public
+npm publish              # prepare builds dist/; publishConfig makes it public
 git push --follow-tags
 ```
 

@@ -22,7 +22,6 @@
     "dev": "node scripts/build.mjs && node dist/cli.js --demo",
     "test": "node scripts/build.mjs && node --test --test-timeout=120000 --test-force-exit test/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "prepack": "node scripts/build.mjs",
     "site": "node scripts/build-site.mjs",
     "site:dev": "node scripts/build-site.mjs --dev",
     "prepare": "node scripts/build.mjs"

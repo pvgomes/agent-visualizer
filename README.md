@@ -19,12 +19,15 @@ npx github:pvgomes/agent-visualizer          # open the office with your real ag
 npx github:pvgomes/agent-visualizer --demo   # a busy pretend office, to look around
 ```
 
-Or install it once and use the short command (needed for `agent-visualizer install`, below):
+Or install it once and use the short command (needed for `agent-visualizer install`, below). npm builds it from GitHub into a package file, then installs that:
 
 ```sh
-npm install -g github:pvgomes/agent-visualizer
+npm pack github:pvgomes/agent-visualizer        # writes pvgomes-agent-visualizer-<version>.tgz here
+npm install -g ./pvgomes-agent-visualizer-*.tgz
 agent-visualizer
 ```
+
+(`npm install -g github:pvgomes/agent-visualizer` in one step doesn't work: current npm links global installs from git to a temporary folder it then deletes.)
 
 The first run builds the CLI, so it takes a minute; later runs start at once.
 

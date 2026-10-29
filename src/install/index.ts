@@ -308,7 +308,7 @@ async function publishedOrSay(version: string, dryRun: boolean, out: Out): Promi
   out(`${PAD}${mark} ${bold(ok === false ? `${spec} isn't on npm` : `Couldn't check npm for ${spec}`)}${ok === false ? "" : dim(" (no network?)")}.`);
   out(`${PAD}  Agents here would launch the office tools with ${bold(`npx -y ${spec}`)}, which only works once that exact`);
   out(`${PAD}  version is published, and for an unpublished name it would run whatever someone else publishes under it.`);
-  out(`${PAD}  ${dryRun ? "Showing the plan anyway; nothing is written." : `Nothing was written. Install it on that machine instead (${bold(`npm install -g ${GITHUB_SPEC}`)}) and run ${bold("agent-visualizer install")} there: agents then launch that copy.`}`);
+  out(`${PAD}  ${dryRun ? "Showing the plan anyway; nothing is written." : `Nothing was written. Install it on that machine instead (${bold(`npm pack ${GITHUB_SPEC}`)}, then ${bold("npm install -g")} the .tgz it writes) and run ${bold("agent-visualizer install")} there: agents then launch that copy.`}`);
   out();
   return dryRun;
 }
