@@ -1,6 +1,6 @@
 /*
  * The agent-visualizer skill, bundled into the CLI from skills/agent-visualizer/SKILL.md
- * so `npx @pvgomes/agent-visualizer install` can write it without shipping the skills folder.
+ * so `npx github:pvgomes/agent-visualizer install` can write it without shipping the skills folder.
  * Every agent we support reads the same SKILL.md format (YAML frontmatter with
  * name + description, markdown body), so one file serves all of them.
  */

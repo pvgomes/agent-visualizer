@@ -16,7 +16,7 @@ import { AGENT_KINDS, parseAgentKind } from "../mcp/clients.ts";
 import { runMcpStdio } from "../mcp/server.ts";
 import { fetchSnapshot, findOffice } from "../mcp/office.ts";
 import { outboxDir } from "../mcp/outbox.ts";
-import { chooseLaunch, npmHasVersion, npxPackage, selfCommand, type Launch } from "./command.ts";
+import { GITHUB_SPEC, chooseLaunch, npmHasVersion, npxPackage, selfCommand, type Launch } from "./command.ts";
 import { diagnose, install, printDoctor, uninstall, type Out } from "./installer.ts";
 import { REMOTE_KINDS, detectRemotes, resolveRemotes, type RemoteKind, type RemoteSelector } from "./remotes.ts";
 import { localSys, remoteSys, type Sys } from "./sys.ts";
@@ -200,7 +200,7 @@ function ago(ms: number): string {
 
 async function officeLine(out: Out): Promise<void> {
   const port = await findOffice();
-  if (port === null) out(`${PAD}${dim("Office")}     ${yellow("not running")} ${dim("· start it with")} ${bold("npx @pvgomes/agent-visualizer")}`);
+  if (port === null) out(`${PAD}${dim("Office")}     ${yellow("not running")} ${dim("· start it with")} ${bold("npx github:pvgomes/agent-visualizer")}`);
   else {
     const snap = await fetchSnapshot(port);
     const n = snap?.workers.length ?? 0;
@@ -218,7 +218,7 @@ async function officeLine(out: Out): Promise<void> {
 
 /** Remote platforms whose CLI or credentials are present here, for doctor. */
 async function remoteHints(sys: Sys): Promise<string[]> {
-  // The office's own auto-detection, when src/remote is registered: the same answer `npx @pvgomes/agent-visualizer` acts on.
+  // The office's own auto-detection, when src/remote is registered: the same answer `npx github:pvgomes/agent-visualizer` acts on.
   const hints = detectRemotes() ?? [];
   if (!hints.length) {
     if (await sys.which("railway")) hints.push("railway CLI");
@@ -256,7 +256,7 @@ async function doctor(f: Flags, out: Out, version: string): Promise<number> {
     out();
     if (fixable) {
       const where = sys.remote ? ` --${sys.where.split(":")[0]} ${sys.where.slice(sys.where.indexOf(":") + 1)}` : "";
-      out(`${PAD}${yellow(`${fixable} agent${fixable === 1 ? "" : "s"} could use the office tools.`)} Run ${bold(`npx @pvgomes/agent-visualizer install${where}`)}`);
+      out(`${PAD}${yellow(`${fixable} agent${fixable === 1 ? "" : "s"} could use the office tools.`)} Run ${bold(`npx github:pvgomes/agent-visualizer install${where}`)}`);
       out();
     } else if (rows.some((r) => r.installed)) {
       out(`${PAD}${green("All set.")}`);
@@ -308,7 +308,7 @@ async function publishedOrSay(version: string, dryRun: boolean, out: Out): Promi
   out(`${PAD}${mark} ${bold(ok === false ? `${spec} isn't on npm` : `Couldn't check npm for ${spec}`)}${ok === false ? "" : dim(" (no network?)")}.`);
   out(`${PAD}  Agents here would launch the office tools with ${bold(`npx -y ${spec}`)}, which only works once that exact`);
   out(`${PAD}  version is published, and for an unpublished name it would run whatever someone else publishes under it.`);
-  out(`${PAD}  ${dryRun ? "Showing the plan anyway; nothing is written." : "Nothing was written. Publish it first, or install agent-visualizer on that machine and run its own installer."}`);
+  out(`${PAD}  ${dryRun ? "Showing the plan anyway; nothing is written." : `Nothing was written. Install it on that machine instead (${bold(`npm install -g ${GITHUB_SPEC}`)}) and run ${bold("agent-visualizer install")} there: agents then launch that copy.`}`);
   out();
   return dryRun;
 }

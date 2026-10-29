@@ -18,6 +18,8 @@ import { readServiceFile } from "../control/service.ts";
 
 export const SERVER_NAME = "agent-visualizer";
 export const PACKAGE_NAME = "@pvgomes/agent-visualizer";
+/** Where people install it from while it isn't on npm: npx and npm -g take it straight from GitHub. */
+export const GITHUB_SPEC = "github:pvgomes/agent-visualizer";
 
 /** The spec agents run with npx: this exact version. */
 export function npxPackage(version: string): string {
@@ -48,15 +50,15 @@ const SERVICE_COPY = /\/app\/[^/]+\/dist\/cli\.js$/;
 
 /**
  * What to type to run this CLI again, for the commands its hints name: `agent-visualizer` after a
- * global install, `npx @pvgomes/agent-visualizer` from a package-runner cache, where `agent-visualizer` was
+ * global install, `npx github:pvgomes/agent-visualizer` from a package-runner cache, where `agent-visualizer` was
  * never put on PATH. The background service's copy isn't on PATH either: it names what installed
  * it, as service.json beside app/ records (npx when that predates the record).
  */
 export function selfCommand(script = fileURLToPath(import.meta.url)): string {
-  if (isEphemeral(script)) return `npx ${PACKAGE_NAME}`;
+  if (isEphemeral(script)) return `npx ${GITHUB_SPEC}`;
   if (SERVICE_COPY.test(script.replace(/\\/g, "/"))) {
     const f = readServiceFile(dirname(dirname(dirname(dirname(script)))));
-    if (f) return f.command ?? `npx ${PACKAGE_NAME}`;
+    if (f) return f.command ?? `npx ${GITHUB_SPEC}`;
   }
   return "agent-visualizer";
 }

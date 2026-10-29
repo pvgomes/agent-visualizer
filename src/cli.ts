@@ -1,5 +1,5 @@
 /*
- * `npx @pvgomes/agent-visualizer`: parse flags, fill the state store from the transcript
+ * `npx github:pvgomes/agent-visualizer`: parse flags, fill the state store from the transcript
  * watcher (or the demo), serve the office on localhost, print the banner and
  * open the browser. No dependencies: flags are parsed by hand and the colours
  * are raw ANSI, off for NO_COLOR and when stdout is not a terminal.
@@ -388,8 +388,8 @@ function help(version: string): string {
 ${bold("agent-visualizer")} ${dim(`v${version}`)}  a live pixel-art office for your coding agents
 
 ${bold("Usage")}
-  npx @pvgomes/agent-visualizer [office] [options]     open the office (the default command)
-  npx @pvgomes/agent-visualizer <command> [options]    install | uninstall | doctor | mcp | open
+  npx github:pvgomes/agent-visualizer [office] [options]    open the office (the default command)
+  npx github:pvgomes/agent-visualizer <command> [options]   install | uninstall | doctor | mcp | open
 
 ${bold("Office options")}
   --port <n>, -p    Port to serve on (default ${DEFAULT_PORT}; tries the next ${PORT_FALLBACK} if taken)

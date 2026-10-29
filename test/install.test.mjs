@@ -450,9 +450,9 @@ test("launch choice: npx cache -> npx; checkout -> absolute node + script; remot
   assert.equal(M.npxPackage("1.2.3-beta.1"), "@pvgomes/agent-visualizer@1.2.3-beta.1");
 });
 
-test("selfCommand: hints name npx @pvgomes/agent-visualizer from an npx cache, where agent-visualizer isn't on PATH", () => {
-  assert.equal(M.selfCommand("/Users/me/.npm/_npx/abc123/node_modules/agent-visualizer/dist/cli.js"), "npx @pvgomes/agent-visualizer");
-  assert.equal(M.selfCommand("/tmp/dlx-12345/node_modules/agent-visualizer/dist/cli.js"), "npx @pvgomes/agent-visualizer");
+test("selfCommand: hints name npx github:pvgomes/agent-visualizer from an npx cache, where agent-visualizer isn't on PATH", () => {
+  assert.equal(M.selfCommand("/Users/me/.npm/_npx/abc123/node_modules/agent-visualizer/dist/cli.js"), "npx github:pvgomes/agent-visualizer");
+  assert.equal(M.selfCommand("/tmp/dlx-12345/node_modules/agent-visualizer/dist/cli.js"), "npx github:pvgomes/agent-visualizer");
   assert.equal(M.selfCommand("/opt/homebrew/lib/node_modules/agent-visualizer/dist/cli.js"), "agent-visualizer");
   assert.equal(M.selfCommand("/Users/me/agent-visualizer/dist/cli.js"), "agent-visualizer");
 });

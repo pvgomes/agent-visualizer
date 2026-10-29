@@ -1,7 +1,6 @@
 # agent-visualizer
 
 [![powered by pvgomes](https://img.shields.io/badge/powered%20by-pvgomes-181717)](https://pvgomes.com/)
-[![npm](https://img.shields.io/npm/v/@pvgomes/agent-visualizer?color=181717)](https://www.npmjs.com/package/@pvgomes/agent-visualizer)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-181717?logo=typescript&logoColor=white)](tsconfig.json)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0%20%2B%201%20optional-181717)](package.json)
 
@@ -13,19 +12,23 @@ Every Claude Code, Codex, Cursor or other agent session you run gets a desk. You
 
 ## Use
 
-You need Node 18 or newer. No clone, no install:
+You need Node 18 or newer (and git). No clone needed, it installs straight from GitHub:
 
 ```sh
-npx @pvgomes/agent-visualizer          # open the office with your real agents
-npx @pvgomes/agent-visualizer --demo   # a busy pretend office, to look around
+npx github:pvgomes/agent-visualizer          # open the office with your real agents
+npx github:pvgomes/agent-visualizer --demo   # a busy pretend office, to look around
 ```
 
-Or install it once and use the short command:
+Or install it once and use the short command (needed for `agent-visualizer install`, below):
 
 ```sh
-npm install -g @pvgomes/agent-visualizer
+npm install -g github:pvgomes/agent-visualizer
 agent-visualizer
 ```
+
+The first run builds the CLI, so it takes a minute; later runs start at once.
+
+> An npm package (`npx @pvgomes/agent-visualizer`) is coming soon.
 
 Your browser opens `http://127.0.0.1:4747`. Start an agent in any terminal and it walks into the office; quit it and it leaves.
 

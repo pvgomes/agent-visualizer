@@ -417,7 +417,7 @@ export interface Provider {
   available(): Availability;
   /**
    * Running sandboxes. "all" (the default, and what `--<platform> all` asks for) is everything
-   * the login can see; "auto" (plain `npx @pvgomes/agent-visualizer`) is only the user's own scope: the
+   * the login can see; "auto" (plain `npx github:pvgomes/agent-visualizer`) is only the user's own scope: the
    * default team, the linked project, sandboxes this user's CLI made. Rejects with RemoteError
    * when the listing itself fails.
    */

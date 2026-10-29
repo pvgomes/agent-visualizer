@@ -176,7 +176,7 @@ Opens the running office with a one-time link that unlocks its controls in that 
     }
   }
   if (port === null) {
-    out(`${PAD}${yellow("No office running.")} Start it with ${bold("npx @pvgomes/agent-visualizer")}`);
+    out(`${PAD}${yellow("No office running.")} Start it with ${bold("npx github:pvgomes/agent-visualizer")}`);
     return 1;
   }
   const f = readOffice();

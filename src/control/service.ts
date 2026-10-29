@@ -57,12 +57,12 @@ export interface ServiceFile {
   installedAt: string;
   startAtLogin: boolean;
   port: number;
-  /** "agent-visualizer" or "npx @pvgomes/agent-visualizer": what installed it, since app/<version> is on nobody's PATH. */
+  /** "agent-visualizer" or "npx github:pvgomes/agent-visualizer": what installed it, since app/<version> is on nobody's PATH. */
   command?: string;
 }
 
 /** The commands a service.json may name (it ends up in the office's own pages). */
-const COMMANDS = new Set(["agent-visualizer", "npx @pvgomes/agent-visualizer", "npx agent-visualizer"]);
+const COMMANDS = new Set(["agent-visualizer", "npx github:pvgomes/agent-visualizer", "npx @pvgomes/agent-visualizer", "npx agent-visualizer"]);
 
 export function supported(platform: NodeJS.Platform): boolean {
   return platform === "darwin" || platform === "linux";

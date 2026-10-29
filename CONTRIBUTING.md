@@ -70,7 +70,9 @@ Keep them focused: one agent, one fix or one feature each. Fill in the template,
 
 ## Releasing
 
-agent-visualizer is published to npm as [`@pvgomes/agent-visualizer`](https://www.npmjs.com/package/@pvgomes/agent-visualizer), so `npx @pvgomes/agent-visualizer` runs the latest release. To cut one from an up-to-date `main`:
+For now agent-visualizer installs straight from GitHub (`npx github:pvgomes/agent-visualizer`, `npm install -g github:pvgomes/agent-visualizer`): npm clones `main`, installs the dev dependencies, runs `prepare` (which builds `dist/`) and packs what `files` lists. So `main` must always build.
+
+The npm package, `@pvgomes/agent-visualizer`, isn't published yet. When it is, cut a release from an up-to-date `main`:
 
 ```sh
 npm version patch        # or minor / major: bumps package.json and tags vX.Y.Z
