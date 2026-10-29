@@ -9,6 +9,7 @@
 import { lookFor, sprite, SPRITE_FOOT, SPRITE_W, type Dir, type Look } from "./sprites.ts";
 import { CORRIDOR_Y, DESK_DY, LANE_DY, POD_GAP, WALL_H, type Decor, type Pt } from "./layout.ts";
 import { speechBubble } from "./props.ts";
+import { mix } from "./palette.ts";
 import { brandInk, type Crew, type DrawCall, type Worker } from "./workers.ts";
 
 const MAX = 3;
@@ -232,6 +233,7 @@ export class Visitors {
           fn: (g) => {
             g.globalAlpha = v.alpha;
             g.drawImage(spr.c, 0, 0, SPRITE_W, h, seat.x - (SPRITE_W >> 1), seat.y - h, SPRITE_W, h);
+            seatedLegs(g, seat.x, seat.y, v.look);
             if (!mate) {
               g.fillStyle = v.book;
               g.fillRect(seat.x - 4, seat.y - 9, 8, 5);
@@ -269,6 +271,35 @@ export class Visitors {
 function sofaSeat(d: Decor, end: 0 | 1): Pt {
   const x0 = d.x + Math.round(d.w / 2) - 24, y0 = d.y + 10 + 18;
   return { x: x0 + (end ? 34 : 14), y: y0 + 12 };
+}
+
+/**
+ * Someone sitting, seen from the front: the lap on the cushion, shins down the
+ * sofa's front and shoes on the floor. (x, hip) is where the cropped standing
+ * sprite ends.
+ */
+function seatedLegs(g: CanvasRenderingContext2D, x: number, hip: number, look: Look) {
+  const line = mix(look.pants, "#0e0d16", 0.45);
+  g.fillStyle = line;
+  g.fillRect(x - 5, hip, 10, 7);
+  // the lap
+  g.fillStyle = look.pants;
+  g.fillRect(x - 4, hip, 8, 2);
+  g.fillStyle = mix(look.pants, "#ffffff", 0.15);
+  g.fillRect(x - 4, hip, 8, 1);
+  // shins, a gap between the knees
+  g.fillStyle = look.pants;
+  g.fillRect(x - 4, hip + 2, 3, 4);
+  g.fillRect(x + 1, hip + 2, 3, 4);
+  g.fillStyle = mix(look.pants, "#0e0d16", 0.25);
+  g.fillRect(x - 1, hip + 2, 2, 5);
+  // shoes on the floor, toes out
+  g.fillStyle = look.shoes;
+  g.fillRect(x - 5, hip + 6, 4, 2);
+  g.fillRect(x + 1, hip + 6, 4, 2);
+  g.fillStyle = mix(look.shoes, "#0e0d16", 0.4);
+  g.fillRect(x - 5, hip + 7, 4, 1);
+  g.fillRect(x + 1, hip + 7, 4, 1);
 }
 
 /** The agent answers from the other side of its head, in its own colour. */
