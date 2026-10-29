@@ -82,7 +82,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
 
   let clock = 0;
   const crew = new Crew(() => clock);
-  const visitors = new Visitors();
+  const visitors = new Visitors(crew);
   const kicker = new Kicker();
   const sky = new Sky(7);
   const lighting = new Lighting();
@@ -441,7 +441,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     }
     if (cut && (cam.mode !== "auto" || panelOpen || clock > cut.until || !crew.workers.has(cut.id))) cut = null;
     bars = clamp(bars + (cut && director ? 1 : -1) * dt / 350, 0, 1);
-    visitors.update(dt, clock, crew.layout.main);
+    visitors.update(dtw, clock);
     kicker.update(dtw, clock, crew.layout.main, city === "rio");
     // camera
     if (clock - insetCheck > 1000) {

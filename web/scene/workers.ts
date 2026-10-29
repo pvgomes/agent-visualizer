@@ -268,7 +268,7 @@ export class Crew {
     w.seated = true;
   }
 
-  private callElevator(now: number) {
+  callElevator(now: number) {
     this.elevator.hold = Math.max(this.elevator.hold, now + 1900);
     if (now - this.elevator.ding > 900) {
       this.elevator.ding = now;
