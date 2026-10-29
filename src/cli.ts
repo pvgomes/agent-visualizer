@@ -65,6 +65,8 @@ interface Options {
   open: boolean;
   demo: boolean;
   seed: number;
+  /** --name: what the office TV says on top (default AGENT VIZ). */
+  name?: string;
   agents: AgentKind[];
   quiet: boolean;
   verbose: boolean;
@@ -146,6 +148,12 @@ function parseArgs(argv: string[]): Options {
         const v = value();
         if (!/^-?\d+$/.test(v)) throw new UsageError(`--seed must be an integer, got "${v}"`);
         o.seed = Number(v);
+        break;
+      }
+      case "--name": {
+        const v = value().replace(/\s+/g, " ").trim();
+        if (!v || v.length > 24 || !/^[\x20-\x7e]+$/.test(v)) throw new UsageError(`--name must be 1-24 plain characters, got "${v}"`);
+        o.name = v;
         break;
       }
       case "--demo":
@@ -388,6 +396,7 @@ ${bold("Office options")}
   --host <addr>     Interface to bind (default ${DEFAULT_HOST}; anything else is visible on that network)
   --agents <list>   Who to watch (default all): ${ALL_AGENTS.join(",")}
   --demo            A simulated office; reads no transcripts
+  --name <text>     The name on the office TV, e.g. --name "Paulo" (default AGENT VIZ)
   --seed <n>        Demo seed, for reproducible recordings (default ${DEFAULT_SEED})
   --no-open         Don't open the browser (also skipped when BROWSER=none or CI is set)
   -q, --quiet       Print the banner only, no arrivals or table flips
@@ -461,7 +470,7 @@ async function main(): Promise<void> {
   if (o.service && !(await adoptLoginEnv())) serviceLog?.("couldn't read the login shell's environment; running with the unit's PATH", "warn");
   const controlOn = o.control && !o.demo && isLoopback(o.host) && controlSupported();
 
-  const state = new OfficeState({ demo: o.demo });
+  const state = new OfficeState({ demo: o.demo, ...(o.name ? { name: o.name } : {}) });
   const onEvent = (e: Parameters<typeof state.ingest>[0]) => state.ingest(e);
   let source: { stop(): void } = { stop() {} };
   let demo: ReturnType<typeof startDemo> | undefined;

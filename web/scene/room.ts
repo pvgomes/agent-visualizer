@@ -44,16 +44,16 @@ export function plan(main: Rect, room: Rect): RoomPlan {
   const x0 = main.x, x1 = main.x + main.w;
   const elevator = { x: x0 + 12, y: WALL_H, doorX: x0 + 12 + P.ELEV_W / 2 };
   const liftEnd = elevator.x + P.ELEV_W;
-  // Back wall, left to right: the lift, then the TV up against the coffee counter and the
-  // server rack, with the clock hung above the rack. The TV keeps at least 100px.
-  const TV_MIN = 100;
+  // Back wall, left to right: the lift, the coffee counter, then the TV hung right by the
+  // server rack (the clock above the rack), so the glass from the lift to the TV is clear view.
+  const TV_MIN = 96;
   const rackX = x1 - 34;
-  const coffee = { x: rackX - 32, y: WALL_H + 9 };
-  const tvTo = coffee.x - 4;
-  const tvFrom = liftEnd + 12;
-  // As wide as the wall allows (the board and shouts have to read at a glance), right by the rack.
-  const tvW = Math.max(TV_MIN, Math.min(main.w >= 460 ? 168 : 128, tvTo - tvFrom));
-  const tv = { x: Math.max(tvFrom, tvTo - tvW), y: 10, w: tvW, h: tvW > 100 ? 44 : 40 };
+  const tvTo = rackX - 4;
+  const tvFrom = liftEnd + 44;
+  const tvW = Math.max(TV_MIN, Math.min(main.w >= 460 ? 132 : 108, tvTo - tvFrom));
+  const tv = { x: Math.max(tvFrom, tvTo - tvW), y: 10, w: tvW, h: 40 };
+  // the coffee counter stands just left of the TV, under the glass
+  const coffee = { x: tv.x - 32, y: WALL_H + 9 };
   // the clock hangs above the rack with a gap: its panel ends 5px over the rack's top (WALL_H - 42)
   const clock = { x: rackX + 10, y: WALL_H - 52 };
   // The back wall is glass from the lift's core to the corner: panes between slim steel mullions.
@@ -429,13 +429,14 @@ export interface Board {
   workers: number;
   tools: number;
   flips: number;
-  byAgent: Record<AgentKind, number>;
   spark: number[];
   /** Sessions waiting on their human right now. */
   waiting?: number;
   live: boolean;
   /** latest agent shouts, newest last; the TV runs the newest as a ticker */
   shouts: Shout[];
+  /** the office's name across the top of the TV (--name) */
+  title?: string;
 }
 
 export const SHOUT_MS = 16_000;
@@ -486,7 +487,7 @@ function tvScreen(g: CanvasRenderingContext2D, tv: Rect, t: number, b: Board) {
   const live = shout && t - shout.t0 < SHOUT_MS ? shout : null;
   r(g, tv.x, tv.y, tv.w, tv.h, C.ink2);
   for (let y = 0; y < tv.h; y += 2) r(g, tv.x, tv.y + y, tv.w, 1, mix(C.ink2, C.blue1, 0.5));
-  drawText(g, m, "AGENT VIZ", tv.x + 3, tv.y + 2, C.gold3);
+  drawText(g, m, fit(m, asciiOnly(b.title ?? "").toUpperCase() || "AGENT VIZ", tv.w - 12), tv.x + 3, tv.y + 2, C.gold3);
   if (Math.floor(t / 600) % 2 === 0) r(g, tv.x + tv.w - 6, tv.y + 3, 3, 3, C.red3);
   const cols: [number, string, string][] = [[b.workers, "CREW", C.white], [b.tools, "TOOLS", C.blue5], [b.flips, "FLIPS", C.terra4]];
   const cw = Math.floor((tv.w - 4) / 3);
@@ -534,16 +535,7 @@ function tvScreen(g: CanvasRenderingContext2D, tv: Rect, t: number, b: Board) {
     drawText(g, f, text, x, by, C.white);
     g.restore();
   } else {
-    // per-brand mini counts for whoever is in, then the activity sparkline
-    const ks = (Object.keys(b.byAgent) as AgentKind[]).filter((k) => b.byAgent[k] > 0).sort((a, c) => b.byAgent[c] - b.byAgent[a]).slice(0, 3);
-    let x = tv.x + 3;
-    for (const k of ks.length ? ks : (["claude", "commandcode", "codex"] as AgentKind[])) {
-      const lg = pixelLogo(k as LogoKind, 5, (BRAND_ART[k] ?? BRAND_ART.claude).ink);
-      g.drawImage(lg.c, x, by);
-      const n = String(b.byAgent[k] ?? 0);
-      drawText(g, m, n, x + 7, by, C.slate4);
-      x += 10 + measure(m, n);
-    }
+    // who needs the viewer, else the activity sparkline (who's in is on the page already)
     if (b.waiting) {
       // who is waiting on a human, instead of the sparkline: the office's to-do for the viewer
       const msg = `${b.waiting} NEED${b.waiting === 1 ? "S" : ""} YOU`;
@@ -554,7 +546,7 @@ function tvScreen(g: CanvasRenderingContext2D, tv: Rect, t: number, b: Board) {
       g.fillRect(tv.x + tv.w - 24, tv.y, 9, tv.h);
       return;
     }
-    const sx = Math.max(x + 2, tv.x + 50), sw = tv.x + tv.w - 3 - sx, sy = tv.y + tv.h - 5;
+    const sx = tv.x + 3, sw = tv.w - 6, sy = tv.y + tv.h - 5;
     const n = Math.min(b.spark.length, sw);
     const max = Math.max(3, ...b.spark.slice(-n));
     for (let i = 0; i < n; i++) {

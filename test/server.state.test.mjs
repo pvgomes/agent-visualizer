@@ -209,6 +209,11 @@ test("a held wait (supervising) doesn't come back when a no-prompt turn starts",
   assert.equal(state.sessions()[0].status, "tool_start");
 });
 
+test("the office's name (--name) rides on the snapshot for the TV; none means none", () => {
+  assert.equal(new OfficeState({ name: "Paulo" }).snapshot().name, "Paulo");
+  assert.equal("name" in new OfficeState().snapshot(), false);
+});
+
 test("command lines map to agents; look-alikes don't", () => {
   const cases = {
     "claude": "claude",

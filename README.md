@@ -47,6 +47,7 @@ Works with Claude Code, Codex, Command Code, opencode, Cursor (the editor and cu
 
 - **Add agent** on the page starts an agent from the office and gives you its terminal.
 - `agent-visualizer install` lets your agents talk to the office (an MCP server and a skill); `agent-visualizer uninstall` removes it.
+- `agent-visualizer --name "Paulo"` puts your name on the office TV.
 - `agent-visualizer --help` lists every option, for example `--port`, `--no-open` or `--no-control` (watch only).
 
 Everything runs on your machine. The page shows labels like "Read router.ts", never your prompts, file contents or keys.

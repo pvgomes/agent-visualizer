@@ -8,7 +8,7 @@
  * tool bursts stay readable. draw() emits y-sorted draw calls for the scene.
  */
 import type { AgentKind, Host, OfficeEvent, Snapshot, ToolCategory, WorkerState } from "../../src/shared/events.ts";
-import { BRAND, IDLE_MS } from "../../src/shared/events.ts";
+import { IDLE_MS } from "../../src/shared/events.ts";
 import { BRAND_ART, C, rgba, type ArtKey } from "./palette.ts";
 import {
   Layout, WALL_H, CORRIDOR_Y, DESK_W, SEAT_W, LAPTOP_DX,
@@ -96,9 +96,6 @@ const CHEER_DUR = 2600;
 const POINT_DUR = 1700;
 const ALARM_DUR = 4200;
 const SHOUT_ICON_MS = 4200;
-const AGENTS = Object.keys(BRAND) as AgentKind[];
-
-export const zeroAgents = (): Record<AgentKind, number> => Object.fromEntries(AGENTS.map((a) => [a, 0])) as Record<AgentKind, number>;
 
 function catAct(c?: ToolCategory): Act {
   switch (c) {
@@ -141,7 +138,7 @@ export class Crew {
   layout = new Layout();
   fx = new Fx();
   elevator = { x: 0, open: 0, hold: 0, ding: 0 };
-  board: Board = { workers: 0, tools: 0, flips: 0, byAgent: zeroAgents(), spark: [], live: true, shouts: [] };
+  board: Board = { workers: 0, tools: 0, flips: 0, spark: [], live: true, shouts: [] };
   /** remote hosts currently unreachable (host id) */
   offline = new Set<string>();
   /** tool calls per 2s bucket, for the TV sparkline and the rack */
@@ -202,6 +199,7 @@ export class Crew {
     this.board.tools = tools;
     this.board.flips = s.recent.filter((e) => e.kind === "test_fail" || e.kind === "flip").length;
     this.board.live = !s.demo;
+    this.board.title = s.name;
     this.board.spark = new Array(30).fill(0);
     const t0 = Date.now();
     for (const e of s.recent) {
@@ -529,9 +527,8 @@ export class Crew {
 
     let count = 0;
     let waiting = 0;
-    const by = zeroAgents();
     for (const w of [...this.workers.values()]) {
-      if (!w.leaving) { count++; by[w.agent] = (by[w.agent] ?? 0) + 1; }
+      if (!w.leaving) count++;
       if (!w.leaving && w.needsHuman && !w.intern) waiting++;
       if (w.path.length && !w.walking && !w.leaving && el.open > 0.7) w.walking = true;
       if (w.alpha < 1 && !w.gone && (el.open > 0.6 || !w.path.length)) w.alpha = Math.min(1, w.alpha + s * 3);
@@ -570,7 +567,6 @@ export class Crew {
     }
     this.board.workers = count;
     this.board.waiting = waiting;
-    this.board.byAgent = by;
     this.board.shouts = this.board.shouts.filter((x) => now - x.t0 < SHOUT_MS * 3);
     this.fx.update(dt, now);
   }

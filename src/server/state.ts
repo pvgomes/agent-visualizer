@@ -73,6 +73,8 @@ export type Claimer = (e: RawEvent) => string | undefined;
 
 export interface StateOptions {
   demo?: boolean;
+  /** The office's name, for the TV (--name). */
+  name?: string;
   /** Clock in epoch ms. Defaults to Date.now. */
   now?: () => number;
   idleMs?: number;
@@ -98,6 +100,7 @@ interface Worker {
 
 export class OfficeState {
   readonly demo: boolean;
+  readonly name?: string;
   readonly startedAt: string;
   private readonly now: () => number;
   private readonly idleMs: number;
@@ -119,6 +122,7 @@ export class OfficeState {
 
   constructor(opts: StateOptions = {}) {
     this.demo = opts.demo ?? false;
+    if (opts.name) this.name = opts.name;
     this.now = opts.now ?? Date.now;
     this.idleMs = opts.idleMs ?? IDLE_MS;
     this.goneMs = opts.goneMs ?? GONE_MS;
@@ -367,6 +371,7 @@ export class OfficeState {
       version: 1,
       startedAt: this.startedAt,
       demo: this.demo,
+      ...(this.name ? { name: this.name } : {}),
       workers: [...this.workers.values()].map((w) => ({ ...w.state })),
       recent: this.recent(),
     };

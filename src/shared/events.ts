@@ -100,6 +100,8 @@ export interface Snapshot {
   version: 1;
   startedAt: string;
   demo: boolean;
+  /** The office's name (--name), shown on the TV. */
+  name?: string;
   workers: WorkerState[];
   recent: OfficeEvent[]; // last <= 200 events, oldest first
   /** Remotes being watched and whether they answer (src/remote/index.ts hosts()). */
