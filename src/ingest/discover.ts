@@ -94,6 +94,10 @@ export function agentRoots(agent: AgentKind, env: SourceEnv, local = true): stri
       // Under macOS sandbox-exec the CLI keeps its runtime state in ~/.cache/.gemini.
       return [join2(gh, ".gemini", "tmp"), join2(home, ".cache", ".gemini", "tmp")];
     }
+    case "copilot": {
+      const x = o("COPILOT");
+      return [under(x || v.COPILOT_HOME || join2(home, ".copilot"), "session-state", !!x, local)];
+    }
     case "opencode":
       return [opencodeDb(env, local)];
   }
@@ -248,7 +252,17 @@ const gemini: Driver = {
   },
 };
 
-export const DRIVERS: Partial<Record<AgentKind, Driver>> = { claude, commandcode, codex, droid, qwen, cursor, gemini };
+const copilot: Driver = {
+  agent: "copilot",
+  // <sessionId>/events.jsonl, written by the Copilot CLI and by VS Code's Copilot agent alike.
+  lists: (root, full) => [{ root, depth: 1, suffixes: ["events.jsonl"], skip: ["checkpoints", "files", "research"], onlyNew: !full }],
+  classify(root, f) {
+    const r = rel(root, f.path);
+    return r.length === 2 && r[1] === "events.jsonl" && UUIDISH.test(r[0]!) ? { ...f, agent: "copilot" } : null;
+  },
+};
+
+export const DRIVERS: Partial<Record<AgentKind, Driver>> = { claude, commandcode, codex, droid, qwen, cursor, gemini, copilot };
 
 /** For Claude-style slugs ("-Users-me-my-app", "C--Users-me-my-app" on Windows): the cwd an absolute path inside it implies, if it matches. */
 export function cwdFromSlug(slug: string, abs: unknown): string | undefined {

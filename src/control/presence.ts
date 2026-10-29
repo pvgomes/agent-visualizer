@@ -177,7 +177,7 @@ export function startPresence(o: PresenceOptions): Presence {
     // Walk in: candidates per agent and folder, minus what existing unlinked workers there account for.
     const groups = new Map<string, ScannedAgent[]>();
     for (const a of agents) {
-      if (tracked.has(a.pid) || skip.has(a.pid) || !a.tty || !a.cwd) continue;
+      if (tracked.has(a.pid) || skip.has(a.pid) || !a.tty || !a.cwd || a.app) continue;
       if (a.startedAt < o.startedAt - ACTIVE_WINDOW_MS) continue;
       if (ownedOrUnder(a) || nested(a)) continue;
       const k = `${a.agent}\0${fold(a.cwd)}`;
@@ -206,7 +206,7 @@ export function startPresence(o: PresenceOptions): Presence {
     followNewTranscripts(t);
 
     // The count-based goodbye for everything presence doesn't track.
-    o.state.reconcileLocal(others.map((a) => ({ agent: a.agent, cwd: a.cwd })));
+    o.state.reconcileLocal(others.map((a) => ({ agent: a.agent, cwd: a.cwd, ...(a.app ? { app: true } : {}) })));
   }
 
   /** The agent says this process is in session `sid` now: link to it exactly, or move the desk there. */

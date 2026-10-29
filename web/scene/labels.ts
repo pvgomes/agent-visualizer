@@ -34,7 +34,7 @@ const ACT_COL: Record<Act, string> = {
 /** Short agent names for tags. */
 const SHORT: Record<string, string> = {
   claude: "Claude", commandcode: "Command", codex: "Codex", opencode: "opencode", droid: "Droid",
-  gemini: "Gemini", qwen: "Qwen", cursor: "Cursor",
+  gemini: "Gemini", qwen: "Qwen", cursor: "Cursor", copilot: "Copilot",
 };
 
 interface Box { x: number; y: number; w: number; h: number; id?: string }

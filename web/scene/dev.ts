@@ -27,7 +27,7 @@ scene.onSelect((id) => console.log("select", id));
 const PROJECTS: [AgentKind, string][] = [
   ["claude", "agent-visualizer"], ["codex", "payments-api"], ["commandcode", "context-bridge"], ["opencode", "tui-kit"],
   ["claude", "ascii.rest"], ["gemini", "docs-site"], ["droid", "infra"], ["qwen", "ml-pipeline"],
-  ["cursor", "web-app"], ["codex", "ml-pipeline"], ["claude", "dotfiles"], ["commandcode", "web-app"],
+  ["cursor", "web-app"], ["copilot", "dotfiles"], ["codex", "ml-pipeline"], ["claude", "dotfiles"], ["commandcode", "web-app"],
 ];
 const HOSTS: Host[] = [
   { kind: "daytona", id: "daytona:7f3a", name: "auth-refactor" },
@@ -38,7 +38,7 @@ const HOSTS: Host[] = [
 ];
 const MODELS: Record<AgentKind, string> = {
   claude: "claude-opus-5-5", commandcode: "cmd-1", codex: "gpt-5.6-sol", opencode: "deepseek/deepseek-v4-pro",
-  droid: "droid-core", gemini: "gemini-3-pro", qwen: "qwen3.5-coder", cursor: "cursor-agent",
+  droid: "droid-core", gemini: "gemini-3-pro", qwen: "qwen3.5-coder", cursor: "cursor-agent", copilot: "claude-sonnet-5.5",
 };
 const ROLES = ["Explore", "general-purpose", "code-reviewer", "test-runner", "Plan"];
 const FILES = ["cli.ts", "server.ts", "index.ts", "scene.ts", "README.md", "auth.go", "main.py", "routes.ts", "db.sql", "style.css"];

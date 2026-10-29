@@ -36,7 +36,7 @@ test("--help documents every command and flag", { skip: !built && "dist/cli.js n
     "office", "install", "uninstall", "doctor", "mcp",
     "--demo", "--port", "--host", "--no-open", "--agents", "--seed",
     "--ssh", "--daytona", "--boat", "--railway", "--vercel", "--no-cloud", "--local-only",
-    "claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor",
+    "claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot",
   ]) assert.ok(r.stdout.includes(word), `help mentions ${word}`);
 });
 

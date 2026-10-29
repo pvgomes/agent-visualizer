@@ -1,0 +1,44 @@
+{"type":"session.start","data":{"sessionId":"c0000000-1111-4222-8333-666666666666","version":1,"producer":"copilot-agent","copilotVersion":"1.0.105","startTime":"2026-01-15T10:00:00.000Z","selectedModel":"auto","context":{"cwd":"/tmp/demo-app","gitRoot":"/tmp/demo-app","branch":"main"}},"id":"e0","timestamp":"2026-01-15T10:00:01.000Z","parentId":null}
+{"type":"hook.start","data":{"hookType":"sessionStart","input":{"initialPrompt":"SECRET_NEEDLE"}},"id":"e1","timestamp":"2026-01-15T10:00:02.000Z","parentId":null}
+{"type":"session.auto_mode_resolved","data":{"chosenModel":"claude-sonnet-5.5"},"id":"e2","timestamp":"2026-01-15T10:00:03.000Z","parentId":null}
+{"type":"user.message","data":{"content":"fix the login, my password is hunter2 SECRET_NEEDLE","transformedContent":"SECRET_NEEDLE","interactionId":"i1","turnId":"0"},"id":"e3","timestamp":"2026-01-15T10:00:04.000Z","parentId":null}
+{"type":"system.message","data":{"role":"system","content":"you are copilot SECRET_NEEDLE"},"id":"e4","timestamp":"2026-01-15T10:00:05.000Z","parentId":null}
+{"type":"assistant.turn_start","data":{"turnId":"0"},"id":"e5","timestamp":"2026-01-15T10:00:06.000Z","parentId":null}
+{"type":"assistant.message","data":{"model":"claude-sonnet-5.5","content":"","reasoningText":"SECRET_NEEDLE thinking","toolRequests":[{"toolCallId":"t1","name":"bash","arguments":{"command":"npm test"}}]},"id":"e6","timestamp":"2026-01-15T10:00:07.000Z","parentId":null}
+{"type":"session.usage_record","data":{"usage":{"model":"claude-sonnet-5.5","inputTokens":1000,"outputTokens":200}},"id":"e7","timestamp":"2026-01-15T10:00:08.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t1","toolName":"bash","arguments":{"command":"npm test","description":"Run tests"}},"id":"e8","timestamp":"2026-01-15T10:00:09.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t1","success":true,"shellExecution":{"exitCode":1},"result":{"content":"1 failing SECRET_NEEDLE"}},"id":"e9","timestamp":"2026-01-15T10:00:10.000Z","parentId":null}
+{"type":"assistant.turn_end","data":{"turnId":"0"},"id":"e10","timestamp":"2026-01-15T10:00:11.000Z","parentId":null}
+{"type":"assistant.turn_start","data":{"turnId":"1"},"id":"e11","timestamp":"2026-01-15T10:00:12.000Z","parentId":null}
+{"type":"assistant.message","data":{"model":"claude-sonnet-5.5","content":"","toolRequests":[{"toolCallId":"t2","name":"report_intent"},{"toolCallId":"t3","name":"view"}]},"id":"e12","timestamp":"2026-01-15T10:00:13.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t2","toolName":"report_intent","arguments":{"intent":"Reading SECRET_NEEDLE"}},"id":"e13","timestamp":"2026-01-15T10:00:14.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t2","success":true},"id":"e14","timestamp":"2026-01-15T10:00:15.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t3","toolName":"view","arguments":{"path":"/tmp/demo-app/src/login.ts"}},"id":"e15","timestamp":"2026-01-15T10:00:16.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t3","success":true,"result":{"content":"const password = \"SECRET_NEEDLE\""}},"id":"e16","timestamp":"2026-01-15T10:00:17.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t4","toolName":"edit","arguments":{"path":"/tmp/demo-app/src/login.ts","old_str":"SECRET_NEEDLE","new_str":"ghp_x"}},"id":"e17","timestamp":"2026-01-15T10:00:18.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t4","success":false,"error":{"message":"no match"}},"id":"e18","timestamp":"2026-01-15T10:00:19.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t5","toolName":"task","arguments":{"agent_type":"explore","prompt":"SECRET_NEEDLE"}},"id":"e19","timestamp":"2026-01-15T10:00:20.000Z","parentId":null}
+{"type":"subagent.started","data":{"toolCallId":"t5","agentName":"explore","agentDisplayName":"Explore Agent","agentType":"explore"},"id":"e20","timestamp":"2026-01-15T10:00:21.000Z","parentId":null}
+{"type":"user.message","data":{"content":"brief SECRET_NEEDLE"},"id":"e21","timestamp":"2026-01-15T10:00:22.000Z","parentId":null,"agentId":"t5"}
+{"type":"assistant.turn_start","data":{"turnId":"0"},"id":"e22","timestamp":"2026-01-15T10:00:23.000Z","parentId":null,"agentId":"t5"}
+{"type":"tool.execution_start","data":{"toolCallId":"s1","toolName":"rg","arguments":{"pattern":"SECRET_NEEDLE","path":"/tmp/demo-app/src"},"parentToolCallId":"t5"},"id":"e23","timestamp":"2026-01-15T10:00:24.000Z","parentId":null,"agentId":"t5"}
+{"type":"tool.execution_complete","data":{"toolCallId":"s1","success":true,"parentToolCallId":"t5"},"id":"e24","timestamp":"2026-01-15T10:00:25.000Z","parentId":null,"agentId":"t5"}
+{"type":"assistant.message","data":{"content":"found it SECRET_NEEDLE","toolRequests":[]},"id":"e25","timestamp":"2026-01-15T10:00:26.000Z","parentId":null,"agentId":"t5"}
+{"type":"assistant.turn_end","data":{"turnId":"0"},"id":"e26","timestamp":"2026-01-15T10:00:27.000Z","parentId":null,"agentId":"t5"}
+{"type":"subagent.completed","data":{"toolCallId":"t5","agentName":"explore"},"id":"e27","timestamp":"2026-01-15T10:00:28.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t5","success":true,"result":{"content":"SECRET_NEEDLE"}},"id":"e28","timestamp":"2026-01-15T10:00:29.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t6","toolName":"get_issue","mcpServerName":"github","mcpToolName":"get_issue","arguments":{"issue":"SECRET_NEEDLE"}},"id":"e29","timestamp":"2026-01-15T10:00:30.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t6","success":true},"id":"e30","timestamp":"2026-01-15T10:00:31.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t7","toolName":"bash","arguments":{"command":"CI=1 npm test"}},"id":"e31","timestamp":"2026-01-15T10:00:32.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t7","success":true,"shellExecution":{"exitCode":0},"result":{"content":"all passed"}},"id":"e32","timestamp":"2026-01-15T10:00:33.000Z","parentId":null}
+{"type":"assistant.turn_end","data":{"turnId":"1"},"id":"e33","timestamp":"2026-01-15T10:00:34.000Z","parentId":null}
+{"type":"assistant.turn_start","data":{"turnId":"2"},"id":"e34","timestamp":"2026-01-15T10:00:35.000Z","parentId":null}
+{"type":"assistant.message","data":{"content":"Fixed it. SECRET_NEEDLE","toolRequests":[]},"id":"e35","timestamp":"2026-01-15T10:00:36.000Z","parentId":null}
+{"type":"assistant.turn_end","data":{"turnId":"2"},"id":"e36","timestamp":"2026-01-15T10:00:37.000Z","parentId":null}
+{"type":"user.message","data":{"content":"which approach?","interactionId":"i2"},"id":"e37","timestamp":"2026-01-15T10:00:38.000Z","parentId":null}
+{"type":"assistant.turn_start","data":{"turnId":"3"},"id":"e38","timestamp":"2026-01-15T10:00:39.000Z","parentId":null}
+{"type":"tool.execution_start","data":{"toolCallId":"t8","toolName":"ask_user","arguments":{"question":"SECRET_NEEDLE?"}},"id":"e39","timestamp":"2026-01-15T10:00:40.000Z","parentId":null}
+{"type":"tool.execution_complete","data":{"toolCallId":"t8","success":true},"id":"e40","timestamp":"2026-01-15T10:00:41.000Z","parentId":null}
+{"type":"session.error","data":{"errorType":"rate_limit","message":"SECRET_NEEDLE"},"id":"e41","timestamp":"2026-01-15T10:00:42.000Z","parentId":null}
+{"type":"session.shutdown","data":{"shutdownType":"routine"},"id":"e42","timestamp":"2026-01-15T10:00:43.000Z","parentId":null}
+{broken json
