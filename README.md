@@ -75,35 +75,41 @@ Either way, with controls unlocked:
 
 ### The herdr plugin
 
-The plugin starts the office when herdr starts (in herd mode) and opens it with a key. You need:
+The plugin starts the office when herdr starts (in herd mode) and opens it with a key. You need herdr 0.7.5 or newer, Node 18 or newer with npm, and git, on macOS or Linux.
 
-- herdr 0.7.5 or newer
-- Node 18 or newer, npm and git (herdr clones this repo and builds it with `npm install`)
-- macOS or Linux
+1. **Install it** (herdr clones this repo and builds it, about a minute):
 
-```sh
-herdr plugin install pvgomes/agent-visualizer
-```
+   ```sh
+   herdr plugin install pvgomes/agent-visualizer
+   ```
 
-Then bind a key in herdr's `config.toml` and reload it (`herdr server reload-config`):
+2. **Bind a key.** Add this to `~/.config/herdr/config.toml`:
 
-```toml
-[[keys.command]]
-key = "prefix+o"
-type = "plugin_action"
-command = "agent-visualizer.open"
-description = "open the office"
-```
+   ```toml
+   [[keys.command]]
+   key = "prefix+o"
+   type = "plugin_action"
+   command = "agent-visualizer.open"
+   description = "open the office"
+   ```
 
-`prefix+o` (or `herdr plugin action invoke agent-visualizer.open`) opens the office in your browser, unlocked, starting it first if it isn't running. Ctrl+click on the office's address in a pane does the same (with herdr's `ui.mouse_capture` on). If an office is already running (say, the background service), the plugin uses it as it is.
+   then reload herdr's config:
 
-Settings go in `office.json` in the plugin's config folder (`herdr plugin config-dir agent-visualizer`):
+   ```sh
+   herdr server reload-config
+   ```
 
-```json
-{ "herd": true, "name": "Paulo", "port": 4747 }
-```
+3. **Optional: settings.** Put an `office.json` in the plugin's config folder (`herdr plugin config-dir agent-visualizer` prints it, usually `~/.config/herdr/plugins/config/agent-visualizer/`):
 
-`"herd": false` starts the office with the agents on this machine instead; `name` goes on the office TV. The office's log is in the plugin's state folder.
+   ```json
+   { "herd": true, "name": "Paulo", "port": 4747 }
+   ```
+
+   `"herd": false` shows the agents on this machine instead of your herd; `name` goes on the office TV. The office's log is in the plugin's state folder.
+
+4. **Use it.** `prefix+o` (or `herdr plugin action invoke agent-visualizer.open`) opens the office in your browser, unlocked, starting it first if it isn't running; from then on it also starts with herdr's server. Ctrl+click on the office's address in a pane does the same (with herdr's `ui.mouse_capture` on).
+
+   If an office is already running (one you started yourself, or the background service), the plugin uses it as it is: stop it first if you want the plugin's herd-mode office.
 
 **Publishing it on herdr's side.** herdr's marketplace lists public GitHub repos that carry the `herdr-plugin` topic and a valid `herdr-plugin.toml` (this repo has one at its root); there's no submission or review, and the index refreshes every 30 minutes. So the repo needs the topic once:
 
