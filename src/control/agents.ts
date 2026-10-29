@@ -17,7 +17,8 @@ import type { AgentAvailability, ControlMode, PermissionMode } from "../shared/c
 import { which } from "../remote/util.ts";
 import { AGENT_FACTS, type Launch, type PermissionFlags, type PtyBackend, type TermDrive } from "./types.ts";
 
-export const AGENTS = Object.keys(AGENT_FACTS) as AgentKind[];
+/** Agents the office can start ("other" is whatever herdr runs that the office has no kind for). */
+export const AGENTS = (Object.keys(AGENT_FACTS) as AgentKind[]).filter((a) => a !== "other");
 export const ALL_PERMISSIONS: PermissionMode[] = ["default", "acceptEdits", "plan", "bypass"];
 
 /** Paste, then Enter this much later: sooner and Claude's TUI takes the Enter as a newline in the paste. */
@@ -61,6 +62,7 @@ export const PERMISSION_FLAGS: Record<AgentKind, PermissionFlags> = {
   },
   cursor: { default: [], bypass: ["--force"] },
   copilot: { default: [], bypass: ["--allow-all-tools"] },
+  other: {},
 };
 
 /**

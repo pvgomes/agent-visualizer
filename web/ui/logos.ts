@@ -13,6 +13,7 @@ import geminiSvg from "../../assets/logos/gemini.svg";
 import qwenSvg from "../../assets/logos/qwen.svg";
 import cursorSvg from "../../assets/logos/cursor.svg";
 import copilotSvg from "../../assets/logos/copilot.svg";
+import otherSvg from "../../assets/logos/other.svg";
 import daytonaSvg from "../../assets/logos/daytona.svg";
 import boatSvg from "../../assets/logos/boat.svg";
 import railwaySvg from "../../assets/logos/railway.svg";
@@ -35,7 +36,7 @@ function clean(src: string): string {
 
 const SOURCES: Record<string, string> = {
   claude: claudeSvg, commandcode: commandcodeSvg, codex: codexSvg, opencode: opencodeSvg, droid: droidSvg,
-  gemini: geminiSvg, qwen: qwenSvg, cursor: cursorSvg, copilot: copilotSvg,
+  gemini: geminiSvg, qwen: qwenSvg, cursor: cursorSvg, copilot: copilotSvg, other: otherSvg,
   "host-ssh": SSH_GLYPH, "host-daytona": daytonaSvg, "host-boat": boatSvg, "host-railway": railwaySvg, "host-vercel": vercelSvg,
 };
 const templates = new Map<string, HTMLTemplateElement>();

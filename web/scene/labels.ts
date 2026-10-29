@@ -34,7 +34,7 @@ const ACT_COL: Record<Act, string> = {
 /** Short agent names for tags. */
 const SHORT: Record<string, string> = {
   claude: "Claude", commandcode: "Command", codex: "Codex", opencode: "opencode", droid: "Droid",
-  gemini: "Gemini", qwen: "Qwen", cursor: "Cursor", copilot: "Copilot",
+  gemini: "Gemini", qwen: "Qwen", cursor: "Cursor", copilot: "Copilot", other: "Agent",
 };
 
 interface Box { x: number; y: number; w: number; h: number; id?: string }
@@ -247,8 +247,8 @@ export function drawLabels(g: CanvasRenderingContext2D, crew: Crew, cam: Camera,
     // --- the tag above the head: mood if set, else agent / role
     const mood = w.mood;
     const moodText = mood ? asciiOnly(mood.text) || (mood.emoji ? "" : mood.text) : "";
-    // in the cloud-room a worker goes by its sandbox's name, the inspector says which platform
-    let name = w.intern ? (w.role || "intern") : w.host && w.host.kind !== "local" ? cloudLabel(w.host) : SHORT[w.agent] ?? BRAND[w.agent]?.name ?? w.agent;
+    // in the cloud-room a worker goes by its sandbox's name; an agent known only through herdr, by herdr's name for it
+    let name = w.intern ? (w.role || "intern") : w.host && w.host.kind !== "local" ? cloudLabel(w.host) : w.agent === "other" && w.model ? w.model : SHORT[w.agent] ?? BRAND[w.agent]?.name ?? w.agent;
     if (sel || hov) name = `${w.intern ? name : BRAND[w.agent]?.name ?? name}${w.model ? " · " + shortModel(w.model) : ""}`;
     const showMood = !!mood && !flipping;
     const label = showMood && !sel && !hov ? fit(FONT(), moodText, 30 * 6) : fit(FONT(), name, sel || hov ? 40 * 6 : 16 * 6);

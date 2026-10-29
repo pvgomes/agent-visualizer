@@ -25,6 +25,7 @@ import { createSessionPanel, prefetchViews } from "./control/session.ts";
 import { createSessionList } from "./control/sessions.ts";
 import type { SettingsDrawer, SettingsTab } from "./control/settings.ts";
 import { ControlStore } from "./control/store.ts";
+import { api } from "./control/api.ts";
 import { controlToken } from "./control/token.ts";
 import type { ControlSession } from "../../src/shared/control.ts";
 
@@ -98,7 +99,11 @@ export function mountChrome(root: HTMLElement, scene: OfficeScene): Chrome {
     }
   };
 
-  const inspector = createInspector({ onClose: () => select(null), onFocus: (id) => safe(() => scene.focus(id)) });
+  const inspector = createInspector({
+    onClose: () => select(null),
+    onFocus: (id) => safe(() => scene.focus(id)),
+    onHerdr: (id) => void api.herdrFocus(id).then(() => say("Opened in herdr"), (e: Error) => say(e.message, "error")),
+  });
   const feed = createFeed({ onPick: (id) => select(id, true), onToggle: () => setFeed(!feed.isOpen()) });
 
   /* ---- the control plane ---- */
@@ -137,6 +142,7 @@ export function mountChrome(root: HTMLElement, scene: OfficeScene): Chrome {
             openSession(s);
             say(`Adding ${agentName(s.agent)}…`);
           },
+          onHerdr: (agent, pane) => say(`${agentName(agent)} started in herdr (${pane})`),
           openSettings: (tab) => {
             d.close();
             openSettings(tab);
@@ -445,6 +451,17 @@ export function mountChrome(root: HTMLElement, scene: OfficeScene): Chrome {
     const id = inspector.current();
     const known = store.state === "enabled" || store.state === "locked";
     inspector.setOrigin(id && known && !store.forWorker(id) ? "Started outside the office · watch only" : null);
+    // A worker in a herdr pane can be brought forward there (unlocked browsers only).
+    inspector.setHerdr(false);
+    if (!id || store.state !== "enabled") return;
+    void api.herdr(id).then(
+      (h) => {
+        if (inspector.current() !== id || !h.pane) return;
+        inspector.setHerdr(true);
+        inspector.setOrigin(`Runs in herdr (${h.pane})`);
+      },
+      () => {},
+    );
   }
 
   function openSession(s: ControlSession, focus = false): void {

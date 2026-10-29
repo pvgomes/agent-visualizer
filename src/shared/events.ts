@@ -15,7 +15,8 @@ export type AgentKind =
   | "gemini"
   | "qwen"
   | "cursor"  // Cursor's editor agent and the cursor-agent CLI
-  | "copilot"; // GitHub Copilot: the CLI and VS Code's agent
+  | "copilot" // GitHub Copilot: the CLI and VS Code's agent
+  | "other";  // any other agent herdr runs (Pi, Devin, Amp, ...): seen through herdr only
 
 /** Where a worker is running. Local sessions omit `host` on events. */
 export type HostKind = "local" | "ssh" | "daytona" | "boat" | "railway" | "vercel";
@@ -173,6 +174,7 @@ export const BRAND: Record<AgentKind, { name: string; color: string; ink: string
   qwen: { name: "Qwen Code", color: "#615CED", ink: "#0B0B14" },
   cursor: { name: "Cursor", color: "#EDECEC", ink: "#0A0A0A" },
   copilot: { name: "GitHub Copilot", color: "#2F81F7", ink: "#0D1117" },
+  other: { name: "Agent", color: "#9AA4B2", ink: "#0E0D16" },
 };
 
 export const HOST_BRAND: Record<Exclude<HostKind, "local">, { name: string; color: string }> = {

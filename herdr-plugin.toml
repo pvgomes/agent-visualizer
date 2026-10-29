@@ -1,0 +1,32 @@
+# agent-visualizer as a herdr plugin (https://herdr.dev/docs/plugins/).
+#   herdr plugin install pvgomes/agent-visualizer
+# herdr clones this repo and runs the build below (npm install, whose prepare step builds dist/).
+# Settings: $HERDR_PLUGIN_CONFIG_DIR/office.json (see `herdr plugin config-dir agent-visualizer`),
+# e.g. { "herd": true, "name": "Paulo", "port": 4747 }.
+id = "agent-visualizer"
+name = "agent-visualizer"
+version = "0.3.0"
+min_herdr_version = "0.7.5"
+description = "Your herd as a live pixel-art office: every agent a worker at a desk, blocked ones raising a hand."
+platforms = ["linux", "macos"]
+
+[[build]]
+command = ["npm", "install", "--no-audit", "--no-fund"]
+
+# When the herdr server starts: make sure an office is running (left alone if one already is).
+[[startup]]
+command = ["node", "dist/cli.js", "herdr", "start"]
+
+# prefix+o, once bound (see the README): open the office in the browser, unlocked.
+[[actions]]
+id = "open"
+title = "Open the office"
+contexts = ["workspace"]
+command = ["node", "dist/cli.js", "herdr", "open"]
+
+# Ctrl+click the office's address in a pane opens it the same way.
+[[link_handlers]]
+id = "office-url"
+title = "Open the office"
+pattern = '^http://(127\.0\.0\.1|localhost):47[0-9]{2}/?$'
+action = "open"

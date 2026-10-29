@@ -43,6 +43,8 @@ import {
   type RemoteSelector, type Remotes,
 } from "./remote/index.ts";
 import { RailwayBudget } from "./remote/railway.ts";
+import { startHerdr } from "./herdr/bridge.ts";
+import { herdrClient } from "./herdr/client.ts";
 
 const ALL_AGENTS: AgentKind[] = [...AGENT_KINDS];
 const PORT_FALLBACK = 20;
@@ -57,6 +59,7 @@ const GLYPH: Record<AgentKind, string> = {
   qwen: "◈",
   cursor: "◭",
   copilot: "◉",
+  other: "▪",
 };
 
 interface Options {
@@ -67,6 +70,10 @@ interface Options {
   seed: number;
   /** --name: what the office TV says on top (default AGENT VIZ). */
   name?: string;
+  /** --herd: herdr decides who is in the office (src/herdr/bridge.ts). */
+  herd: boolean;
+  /** Talk to herdr when it runs (--no-herdr turns it off). */
+  herdr: boolean;
   agents: AgentKind[];
   quiet: boolean;
   verbose: boolean;
@@ -93,6 +100,8 @@ function parseArgs(argv: string[]): Options {
     open: true,
     demo: false,
     seed: DEFAULT_SEED,
+    herd: false,
+    herdr: true,
     agents: [...ALL_AGENTS],
     quiet: false,
     verbose: false,
@@ -158,6 +167,12 @@ function parseArgs(argv: string[]): Options {
       }
       case "--demo":
         o.demo = true;
+        break;
+      case "--herd":
+        o.herd = true;
+        break;
+      case "--no-herdr":
+        o.herdr = false;
         break;
       case "--no-open":
         o.open = false;
@@ -291,6 +306,8 @@ function banner(o: Options, server: OfficeServer, state: OfficeState, version: s
   const sessions = everyone.filter((s) => !s.host); // remotes get their own line
   if (o.demo) {
     out(`${PAD}   ${label("Mode")}${rgb(hex(BRAND.claude.color))("demo")} ${dim("·")} seed ${o.seed} ${dim("·")} ${dim("plays from the top each time the page opens")}`);
+  } else if (o.herd) {
+    out(`${PAD}   ${label("Mode")}herd ${dim("·")} ${dim("the agents herdr runs, posed by herdr's state")}`);
   }
   const cols = Math.max(60, process.stdout.columns ?? 100);
   const rows: string[][] = [[]];
@@ -389,7 +406,7 @@ ${bold("agent-visualizer")} ${dim(`v${version}`)}  a live pixel-art office for y
 
 ${bold("Usage")}
   npx github:pvgomes/agent-visualizer [office] [options]    open the office (the default command)
-  npx github:pvgomes/agent-visualizer <command> [options]   install | uninstall | doctor | mcp | open
+  npx github:pvgomes/agent-visualizer <command> [options]   install | uninstall | doctor | mcp | open | herdr
 
 ${bold("Office options")}
   --port <n>, -p    Port to serve on (default ${DEFAULT_PORT}; tries the next ${PORT_FALLBACK} if taken)
@@ -397,6 +414,8 @@ ${bold("Office options")}
   --agents <list>   Who to watch (default all): ${ALL_AGENTS.join(",")}
   --demo            A simulated office; reads no transcripts
   --name <text>     The name on the office TV, e.g. --name "Paulo" (default AGENT VIZ)
+  --herd            herdr decides who is in: the agents in its panes, posed by its state
+  --no-herdr        Don't talk to herdr (by default it only adds who's blocked, and pane links)
   --seed <n>        Demo seed, for reproducible recordings (default ${DEFAULT_SEED})
   --no-open         Don't open the browser (also skipped when BROWSER=none or CI is set)
   -q, --quiet       Print the banner only, no arrivals or table flips
@@ -461,6 +480,10 @@ async function main(): Promise<void> {
     process.stderr.write(`agent-visualizer: ${err.message}\nRun ${selfCommand()} --help for usage.\n`);
     process.exit(2);
   }
+  if (o.herd && (!o.herdr || o.demo)) {
+    process.stderr.write(`agent-visualizer: --herd needs herdr: it can't go with ${o.demo ? "--demo" : "--no-herdr"}\n`);
+    process.exit(2);
+  }
   if (o.help) return void out(help(version));
   if (o.version) return void out(version);
 
@@ -471,7 +494,20 @@ async function main(): Promise<void> {
   const controlOn = o.control && !o.demo && isLoopback(o.host) && controlSupported();
 
   const state = new OfficeState({ demo: o.demo, ...(o.name ? { name: o.name } : {}) });
-  const onEvent = (e: Parameters<typeof state.ingest>[0]) => state.ingest(e);
+  // herdr, when it runs: in herd mode it decides who is in, so its first answer comes before the transcripts.
+  const herdr = o.demo || !o.herdr
+    ? undefined
+    : startHerdr({
+        mode: o.herd ? "herd" : "machine",
+        request: herdrClient(),
+        onEvent: (e) => state.ingest(e),
+        has: (id) => state.has(id),
+        log: (msg, level) => (o.verbose || level === "warn" || o.herd) && process.stderr.write(`${PAD}${dim(msg)}\n`),
+      });
+  if (herdr && o.herd) await herdr.ready();
+  const onEvent = (e: Parameters<typeof state.ingest>[0]) => {
+    if (!herdr || herdr.admit(e)) state.ingest(e);
+  };
   let source: { stop(): void } = { stop() {} };
   let demo: ReturnType<typeof startDemo> | undefined;
   if (o.demo) {
@@ -500,6 +536,10 @@ async function main(): Promise<void> {
     // A client that connects late learns which remotes are down from the snapshot (Snapshot.hosts).
     const snapshot = state.snapshot.bind(state);
     state.snapshot = () => ({ ...snapshot(), hosts: remotes.hosts() });
+  }
+  if (herdr) {
+    const s = source;
+    source = { stop: () => (s.stop(), herdr.stop()) };
   }
   state.start();
 
@@ -548,6 +588,7 @@ async function main(): Promise<void> {
     service,
     // Under the service, agents register the stable app/current path, never the versioned one an upgrade prunes.
     installer: createInstallApi({ version, script: o.service ? join(appCurrent(svc.home) ?? join(svc.home, "app", "current"), "dist", "cli.js") : undefined }),
+    ...(herdr ? { herdr } : {}),
   });
 
   const serve = async (port: number) => {
@@ -583,7 +624,8 @@ async function main(): Promise<void> {
   if (remotes) await remotes.ready;
   state.tick();
   // Agents started in a terminal walk in at launch and leave when they quit (src/control/presence.ts).
-  const presence = o.demo || !linker
+  // In herd mode herdr says who runs, not the process table.
+  const presence = o.demo || !linker || o.herd
     ? undefined
     : startPresence({
         state,

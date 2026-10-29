@@ -14,7 +14,7 @@ import { parseJson, type WorkerCtx } from "./common.ts";
 import { scrubText } from "./redact.ts";
 
 const KINDS = new Set<AgentSignal["kind"]>(["status", "shout", "celebrate", "flip"]);
-const AGENTS = new Set<AgentKind>(["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot"]);
+const AGENTS = new Set<AgentKind>(["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot", "other"]);
 /**
  * The office tools as each agent's transcript names them: mcp__agent-visualizer__office_status (Claude Code),
  * agent-visualizer__office_status (Codex), agent-visualizer_office_status (opencode), office_status (Gemini, Qwen).

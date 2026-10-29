@@ -20,9 +20,11 @@ export interface Inspector {
   tick(now: number): void;
   /** "Started outside the office · watch only", or null to hide the line. */
   setOrigin(text: string | null): void;
+  /** Show the "open in herdr" button: this worker runs in a herdr pane. */
+  setHerdr(on: boolean): void;
 }
 
-export function createInspector(opts: { onClose(): void; onFocus(workerId: string): void }): Inspector {
+export function createInspector(opts: { onClose(): void; onFocus(workerId: string): void; onHerdr?(workerId: string): void }): Inspector {
   const logoSlot = h("span", { class: "ins-logo" });
   const agentEl = h("span", { class: "ins-agent" });
   const projectEl = h("h2", { class: "ins-project" });
@@ -44,6 +46,11 @@ export function createInspector(opts: { onClose(): void; onFocus(workerId: strin
     { class: "icon-btn", attrs: { type: "button", "aria-label": "Center the camera on this worker", title: "Center camera" }, on: { click: () => id && opts.onFocus(id) } },
     icon("target", 1),
   );
+  const herdrBtn = h(
+    "button",
+    { class: "icon-btn", attrs: { type: "button", hidden: true, "aria-label": "Open this agent's pane in herdr", title: "Open in herdr" }, on: { click: () => id && opts.onHerdr?.(id) } },
+    icon("terminal", 1),
+  );
   const closeBtn = h(
     "button",
     { class: "icon-btn", attrs: { type: "button", "aria-label": "Close inspector", "aria-keyshortcuts": "Escape", title: "Close  Esc" }, on: { click: () => opts.onClose() } },
@@ -62,7 +69,7 @@ export function createInspector(opts: { onClose(): void; onFocus(workerId: strin
       { class: "ins-head" },
       logoSlot,
       h("div", { class: "ins-title" }, h("div", { class: "ins-agent-row" }, agentEl, internChip, hostSlot), projectEl),
-      h("div", { class: "ins-actions" }, focusBtn, closeBtn),
+      h("div", { class: "ins-actions" }, herdrBtn, focusBtn, closeBtn),
     ),
     moodEl,
     h("div", { class: "ins-status" }, dot, statusWord, statusWhat),
@@ -188,6 +195,9 @@ export function createInspector(opts: { onClose(): void; onFocus(workerId: strin
     setOrigin(text) {
       origin.hidden = !text;
       setText(origin, text ?? "");
+    },
+    setHerdr(on) {
+      herdrBtn.hidden = !on;
     },
     tick(now) {
       if (el.hidden) return;

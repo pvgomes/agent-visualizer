@@ -297,6 +297,14 @@ export const BRAND_ART: Record<AgentKind, BrandArt> = {
     chair: [C.cp0, C.cp3], stool: C.cp1,
     kbd: [C.slate3, C.slate4, C.cp4], led: C.cp4,
   },
+  other: {
+    // plain grey: an agent the office knows only through herdr
+    main: C.slate2, dark: C.slate1, deep: C.ink3, light: C.slate3, pale: C.slate5, mark: C.slate5, ink: C.slate4,
+    rug: [C.slate1, C.slate3, C.slate2], pattern: "hex",
+    ...slateDesk, trim: C.slate4,
+    chair: [C.slate1, C.slate4], stool: C.slate2,
+    kbd: [C.slate3, C.slate4, C.slate5], led: C.slate5,
+  },
 };
 
 /** A desk / rug style: an agent's. */

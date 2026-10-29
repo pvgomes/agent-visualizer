@@ -199,6 +199,8 @@ export const AGENT_FACTS: Record<AgentKind, AgentFacts> = {
     nodeMin: 22,
     keyNames: ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
   },
+  // Seen through herdr only: nothing the office can start itself.
+  other: { bins: [], installCmd: "", keyNames: [] },
 };
 
 /* -------------------------------------------------------------- context */

@@ -30,6 +30,7 @@ import { HiredFolders, isDir } from "./fs.ts";
 import { createKeyStore } from "./keys.ts";
 import { createLinker, createOfficePort, type Linker } from "./link.ts";
 import { createLogins, type Logins } from "./logins.ts";
+import type { HerdrBridge } from "../herdr/bridge.ts";
 
 export interface ControlPlaneOptions {
   state: OfficeState;
@@ -58,6 +59,8 @@ export interface ControlPlaneOptions {
   watch?: (target: RemoteTarget) => Disposable;
   service?: ServiceControl;
   installer?: InstallControl;
+  /** herdr, when the office talks to it (src/herdr/bridge.ts): pane links, focus, starting agents there. */
+  herdr?: HerdrBridge;
   pingMs?: number;
   /** "Bring my setup": known key names in the login shell (tests); default a fresh login shell. */
   shellNames?: () => Promise<string[]>;
@@ -218,6 +221,7 @@ export function createControlPlane(o: ControlPlaneOptions): Plane {
     hired,
     service: o.service ?? OFF_SERVICE,
     installer: o.installer ?? NO_INSTALLER,
+    ...(o.herdr ? { herdr: o.herdr } : {}),
     info,
     pingMs: o.pingMs,
     logins,
