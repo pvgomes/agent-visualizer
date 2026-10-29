@@ -1,22 +1,22 @@
 /*
  * The crew: one Worker per session or subagent, plus the stations they sit
- * at. Events become behaviour here: walking in from the elevator (or beaming
- * into the cloud wing, for remote sandboxes), typing, thinking, raising a hand
+ * at. Events become behaviour here: walking in from the elevator (remote
+ * sandboxes to the cloud-room), typing, thinking, raising a hand
  * when the human is needed, flipping the desk when a test fails or when the
  * agent flips it itself through MCP, wearing the mood it set, shouting onto
  * the office TV. Each activity is held on screen for a minimum time so fast
  * tool bursts stay readable. draw() emits y-sorted draw calls for the scene.
  */
 import type { AgentKind, Host, OfficeEvent, Snapshot, ToolCategory, WorkerState } from "../../src/shared/events.ts";
-import { BRAND, HOST_BRAND, IDLE_MS } from "../../src/shared/events.ts";
+import { IDLE_MS } from "../../src/shared/events.ts";
 import { BRAND_ART, C, rgba, type ArtKey } from "./palette.ts";
 import {
-  Layout, WALL_H, CORRIDOR_Y, DESK_W, SEAT_W, LAPTOP_DX, RUG_TOP,
+  Layout, WALL_H, CORRIDOR_Y, DESK_W, SEAT_W, LAPTOP_DX,
   benchDX, deskTop, routeFromSeat, routeToSeat, type Block, type Pt, type Seat,
 } from "./layout.ts";
 import { lookFor, silhouette, sprite, SPRITE_FOOT, SPRITE_W, type Dir, type Look, type Pose } from "./sprites.ts";
 import * as P from "./props.ts";
-import { podArt, podProps, SHOUT_MS, type Board } from "./room.ts";
+import { podProps, SHOUT_MS, type Board } from "./room.ts";
 import { Fx } from "./fx.ts";
 import { bitmap, clamp, easeInOutCubic, easeOutCubic, hash, splitMood, type Bitmap } from "./util.ts";
 
@@ -83,8 +83,6 @@ export interface Worker {
   /** when a leaving worker gets up and walks */
   leaveAt: number;
   leaveRoute: Pt[];
-  /** remote arrivals and departures: materialising in a beam instead of walking */
-  tp: { t0: number; out: boolean } | null;
   /** route the worker is walking to its seat: how many points it had */
   toSeat: boolean;
 }
@@ -97,11 +95,7 @@ const FLIP_OUT = 24;
 const CHEER_DUR = 2600;
 const POINT_DUR = 1700;
 const ALARM_DUR = 4200;
-export const TP_MS = 1100;
 const SHOUT_ICON_MS = 4200;
-const AGENTS = Object.keys(BRAND) as AgentKind[];
-
-export const zeroAgents = (): Record<AgentKind, number> => Object.fromEntries(AGENTS.map((a) => [a, 0])) as Record<AgentKind, number>;
 
 function catAct(c?: ToolCategory): Act {
   switch (c) {
@@ -144,7 +138,7 @@ export class Crew {
   layout = new Layout();
   fx = new Fx();
   elevator = { x: 0, open: 0, hold: 0, ding: 0 };
-  board: Board = { workers: 0, tools: 0, flips: 0, byAgent: zeroAgents(), spark: [], live: true, shouts: [] };
+  board: Board = { workers: 0, tools: 0, flips: 0, spark: [], live: true, shouts: [] };
   /** remote hosts currently unreachable (host id) */
   offline = new Set<string>();
   /** tool calls per 2s bucket, for the TV sparkline and the rack */
@@ -199,12 +193,13 @@ export class Crew {
       for (const h of hosts) {
         const host: Host | undefined = h.host ?? (h.id && h.kind ? { id: h.id, kind: h.kind as Host["kind"], name: h.name ?? h.id } : undefined);
         const down = h.online === false || (typeof h.status === "string" && /off|down|error/i.test(h.status));
-        if (host && isRemote(host) && down) this.markOffline(host, "claude", true);
+        if (host && isRemote(host) && down) this.markOffline(host, true);
       }
     }
     this.board.tools = tools;
     this.board.flips = s.recent.filter((e) => e.kind === "test_fail" || e.kind === "flip").length;
     this.board.live = !s.demo;
+    this.board.title = s.name;
     this.board.spark = new Array(30).fill(0);
     const t0 = Date.now();
     for (const e of s.recent) {
@@ -213,17 +208,13 @@ export class Crew {
         if (age >= 0 && age < 30) this.board.spark[29 - Math.floor(age)]++;
       }
       if (e.kind === "shout" && e.summary && t0 - Date.parse(e.ts) < SHOUT_MS) this.board.shouts.push({ text: e.summary, agent: e.agent, t0: now - (t0 - Date.parse(e.ts)) });
-      if (e.kind === "error" && e.host && OFFLINE.test(e.summary ?? "")) this.markOffline(e.host, e.agent, true);
+      if (e.kind === "error" && e.host && OFFLINE.test(e.summary ?? "")) this.markOffline(e.host, true);
     }
   }
 
-  private markOffline(host: Host, agent: AgentKind, down: boolean) {
-    if (down === this.offline.has(host.id)) return;
-    if (down) {
-      this.offline.add(host.id);
-      this.layout.ghostHost(host, agent);
-    } else this.offline.delete(host.id);
-    this.layout.setOffline(host.id, down, this.now());
+  private markOffline(host: Host, down: boolean) {
+    if (down) this.offline.add(host.id);
+    else this.offline.delete(host.id);
   }
 
   private spawn(e: Pick<OfficeEvent, "workerId" | "agent" | "project" | "parentId" | "role" | "cwd" | "model" | "host">, now: number, arrive: boolean): Worker {
@@ -243,13 +234,9 @@ export class Crew {
       flipReason: "", mood: null, shoutAt: -1e9,
       bulbAt: -1e9, stickies: 0, stickyAt: 0, alpha: 1, leaving: false, gone: false, carrying: false,
       bornAt: now, lastEventAt: now, trinkets: P.trinketsFor(seed), nextFx: 0, fxStage: 0, leaveAt: 0, leaveRoute: [],
-      tp: null, toSeat: false,
+      toSeat: false,
     };
-    if (arrive && remote) {
-      // beamed straight to the desk
-      w.tp = { t0: now, out: false };
-      this.fx.stars(seat.x, seat.y - 12, brandInk(e.agent));
-    } else if (arrive) {
+    if (arrive) {
       const door = { x: this.elevator.x, y: WALL_H + 1 };
       w.x = door.x; w.y = door.y; w.dir = "down";
       w.alpha = 0;
@@ -279,7 +266,7 @@ export class Crew {
     w.seated = true;
   }
 
-  private callElevator(now: number) {
+  callElevator(now: number) {
     this.elevator.hold = Math.max(this.elevator.hold, now + 1900);
     if (now - this.elevator.ding > 900) {
       this.elevator.ding = now;
@@ -289,12 +276,12 @@ export class Crew {
 
   apply(e: OfficeEvent) {
     const now = this.now();
-    // a remote that dropped: dim its pod, never spawn a worker for the notice
+    // a remote that dropped: dim its people, never spawn a worker for the notice
     if (e.host && isRemote(e.host)) {
       if (e.kind === "error" && OFFLINE.test(e.summary ?? "")) {
-        this.markOffline(e.host, e.agent, true);
+        this.markOffline(e.host, true);
         if (!this.workers.has(e.workerId)) return;
-      } else this.markOffline(e.host, e.agent, false);
+      } else this.markOffline(e.host, false);
     }
     if (e.kind === "session_start" && e.replaces && e.replaces !== e.workerId) this.takeOver(e.replaces, e.workerId, now);
     let w = this.workers.get(e.workerId);
@@ -466,13 +453,6 @@ export class Crew {
     w.show = null;
     w.needsHuman = false;
     w.pending = null;
-    if (w.remote) {
-      // beam out from the desk
-      w.tp = { t0: now + 250, out: true };
-      w.path = [];
-      w.walking = false;
-      return;
-    }
     w.carrying = !w.intern;
     const door = { x: this.elevator.x, y: WALL_H + 1 };
     const atSeat = !w.walking && Math.abs(w.x - w.seat.x) < 1;
@@ -506,7 +486,7 @@ export class Crew {
   /* ------------------------------------------------------------- update */
 
   artOf(w: Worker): ArtKey {
-    return podArt(w.seat.block);
+    return w.seat.st.agent ?? w.seat.block.agent;
   }
 
   monitorPos(w: Worker): Pt {
@@ -518,17 +498,6 @@ export class Crew {
     const now = this.now();
     this.recentTools = this.recentTools.filter((t) => now - t < 20_000);
     return clamp(this.recentTools.length / 40, 0, 1);
-  }
-
-  /** How busy a remote pod's crew is, 0..1, for its fibre pulses. */
-  podBusy(b: Block): number {
-    let n = 0, busy = 0;
-    for (const w of this.workers.values()) {
-      if (w.seat.block !== b || w.leaving) continue;
-      n++;
-      if (w.act !== "idle" && w.act !== "waiting") busy += w.act === "thinking" ? 0.5 : 1;
-    }
-    return n ? clamp(busy / n, 0, 1) : 0;
   }
 
   update(dt: number) {
@@ -558,16 +527,11 @@ export class Crew {
 
     let count = 0;
     let waiting = 0;
-    const by = zeroAgents();
     for (const w of [...this.workers.values()]) {
-      if (!w.leaving) { count++; by[w.agent] = (by[w.agent] ?? 0) + 1; }
+      if (!w.leaving) count++;
       if (!w.leaving && w.needsHuman && !w.intern) waiting++;
       if (w.path.length && !w.walking && !w.leaving && el.open > 0.7) w.walking = true;
-      if (w.alpha < 1 && !w.gone && !w.remote && (el.open > 0.6 || !w.path.length)) w.alpha = Math.min(1, w.alpha + s * 3);
-      if (w.tp && now - w.tp.t0 >= TP_MS) {
-        if (w.tp.out) { w.gone = true; w.alpha = 0; }
-        w.tp = null;
-      }
+      if (w.alpha < 1 && !w.gone && (el.open > 0.6 || !w.path.length)) w.alpha = Math.min(1, w.alpha + s * 3);
       if (w.gone) {
         w.alpha -= s * 2.2;
         if (w.alpha <= 0) {
@@ -603,7 +567,6 @@ export class Crew {
     }
     this.board.workers = count;
     this.board.waiting = waiting;
-    this.board.byAgent = by;
     this.board.shouts = this.board.shouts.filter((x) => now - x.t0 < SHOUT_MS * 3);
     this.fx.update(dt, now);
   }
@@ -643,7 +606,7 @@ export class Crew {
   }
 
   private ambientFx(w: Worker, now: number) {
-    if (now < w.nextFx || w.walking || w.tp) return;
+    if (now < w.nextFx || w.walking) return;
     const m = this.monitorPos(w);
     const sh = w.show;
     if (sh?.kind === "alarm") {
@@ -701,7 +664,6 @@ export class Crew {
 
   screenOf(w: Worker | undefined, now: number): P.Screen {
     if (!w) return "off";
-    if (w.tp) return w.tp.out ? (now - w.tp.t0 > 200 ? "off" : "boot") : now - w.tp.t0 < TP_MS * 0.5 ? "off" : "boot";
     if (w.walking && !w.seated) return now - w.bornAt < 400 ? "off" : "boot";
     if (w.leaving) return "off";
     if (w.remote && this.offline.has(w.host!.id)) return "off";
@@ -723,7 +685,6 @@ export class Crew {
       return { pose: w.carrying ? "carry" : "walk", dir: w.dir, frame: w.walking ? frame : 0 };
     }
     if (w.gone) return { pose: "stand", dir: "up", frame: 0 };
-    if (w.tp?.out) return { pose: "stand", dir: "down", frame: 0 };
     if (sh) {
       const t = now - sh.t0;
       if (sh.kind === "flip") {
@@ -767,7 +728,6 @@ export class Crew {
       const y = w.y;
       out.push({ y: y + (w.walking ? 0.2 : 0), fn: (g) => this.drawWorker(g, w, now) });
       if (!w.walking && !w.gone) over.push({ y, fn: (g) => this.drawOverhead(g, w, now) });
-      if (w.tp) over.push({ y: y + 0.1, fn: (g) => this.drawBeam(g, w, now) });
     }
   }
 
@@ -800,7 +760,7 @@ export class Crew {
   }
 
   private drawBlock(out: DrawCall[], b: Block, now: number) {
-    const podKey = podArt(b);
+    const podKey: ArtKey = b.agent;
     const a = b.alpha;
     const wrap = (fn: (g: CanvasRenderingContext2D) => void) => (g: CanvasRenderingContext2D) => {
       if (a < 1) g.globalAlpha = a;
@@ -810,8 +770,8 @@ export class Crew {
     for (const st of b.stations) {
       const dx = Math.round(b.x + st.x);
       const dy = deskTop(b, st);
-      // In a pod two agents share, each desk is in its own agent's colours.
-      const key = b.zone === "local" && st.agent && st.agent !== b.agent ? (st.agent as ArtKey) : podKey;
+      // In a pod two agents share (and in the cloud-room), each desk is in its own agent's colours.
+      const key: ArtKey = st.agent ?? podKey;
       if (st.hot) {
         // a shared hot desk: just the bench, its laptops and stools
         this.pushBench(out, wrap, st, key, b.agent, dx, dy, now);
@@ -830,29 +790,14 @@ export class Crew {
       } else out.push({ y: dy + 14, fn: wrap((g) => this.drawDesk(g, key, b.agent, dx, dy, occ, !!seated, now)) });
       const chairOff = occ ? Math.round(occ.stand * (flipping ? 9 : 7)) : 0;
       const sx = dx + DESK_W / 2 + chairOff, sy = dy + 26;
-      const badge = b.zone === "cloud" && occ && !occ.leaving ? occ.agent : null;
-      out.push({ y: sy + 0.5, fn: wrap((g) => { P.chair(g, sx, sy, key, !(seated && occ!.stand < 0.5)); if (badge) P.chairBadge(g, sx, sy, badge); }) });
+      out.push({ y: sy + 0.5, fn: wrap((g) => P.chair(g, sx, sy, key, !(seated && occ!.stand < 0.5))) });
       if (st.seats > 0) this.pushBench(out, wrap, st, key, b.agent, dx, dy, now);
     }
-    const col = b.zone === "cloud" && b.host && b.host.kind !== "local" ? brandInkHost(b) : brandInk(b.agent);
     for (const pr of podProps(b)) {
-      out.push({ y: pr.y, fn: wrap((g) => P.podProp(g, pr.kind, pr.x, pr.y, hash(b.key) + pr.x, now, col, !b.offline)) });
-    }
-    if (b.offline) {
-      // the sandbox went away: the pod goes dark and shows a pulled plug
-      out.push({
-        y: Math.round(b.y) + b.h + 0.9,
-        fn: (g) => {
-          g.globalAlpha = 0.5 * a;
-          g.fillStyle = C.sv0;
-          g.fillRect(Math.round(b.x), Math.round(b.y) + RUG_TOP - 2, b.w, b.h - RUG_TOP + 2);
-          g.globalAlpha = a;
-          P.unplugged(g, Math.round(b.x) + Math.round(b.w / 2) - 6, Math.round(b.y) + RUG_TOP + 18, now);
-          g.globalAlpha = 1;
-        },
-      });
+      out.push({ y: pr.y, fn: wrap((g) => P.podProp(g, pr.kind, pr.x, pr.y, hash(b.key) + pr.x, now)) });
     }
   }
+
 
   private drawDesk(g: CanvasRenderingContext2D, key: ArtKey, agent: AgentKind, x: number, y: number, occ: Worker | undefined, seated: boolean, now: number) {
     const body = P.deskBody(key);
@@ -974,21 +919,7 @@ export class Crew {
     const y = Math.round(w.y) - SPRITE_FOOT;
     let alpha = clamp(w.alpha, 0, 1);
     if (w.remote && w.host && this.offline.has(w.host.id)) alpha *= 0.55;
-    // materialising: the sprite builds up from the feet (or dissolves from the head)
-    let clipTop = -1;
-    if (w.tp) {
-      const p = clamp((now - w.tp.t0) / TP_MS, 0, 1);
-      const reveal = w.tp.out ? 1 - easeInOutCubic(p) : easeInOutCubic(clamp((p - 0.15) / 0.75, 0, 1));
-      if (reveal <= 0) return;
-      clipTop = Math.round(w.y) + 1 - Math.round(reveal * (SPRITE_FOOT + 2));
-    }
     g.globalAlpha = alpha;
-    if (clipTop >= 0) {
-      g.save();
-      g.beginPath();
-      g.rect(x - 2, clipTop, SPRITE_W + 4, Math.round(w.y) + 3 - clipTop);
-      g.clip();
-    }
     g.fillStyle = "rgba(14,13,22,0.35)";
     g.fillRect(x + 4, Math.round(w.y), 10, 1);
     g.fillRect(x + 5, Math.round(w.y) + 1, 8, 1);
@@ -1017,46 +948,12 @@ export class Crew {
     if (box && dir === "up") P.box(g, Math.round(w.x) - 5, Math.round(w.y) - 17);
     g.drawImage(spr.c, x, y);
     if (box && dir !== "up") P.box(g, Math.round(w.x) - 5, Math.round(w.y) - 13);
-    // remote workers are a hologram away: now and then a scanline glitch rolls over them
-    if (w.remote && !w.tp) {
-      const ph = (now + w.seed * 13) % 5200;
-      if (ph < 140) {
-        const gy = y + 2 + Math.floor((ph / 140) * (SPRITE_FOOT - 2));
-        const col = this.hostInk(w);
-        g.globalAlpha = 0.85 * alpha;
-        g.drawImage(spr.c, 0, gy - y, SPRITE_W, 2, x + 1, gy, SPRITE_W, 2);
-        g.fillStyle = col;
-        g.globalAlpha = 0.5 * alpha;
-        g.fillRect(x + 2, gy, SPRITE_W - 4, 1);
-      }
-    }
-    if (clipTop >= 0) {
-      // the scan line at the build edge
-      g.restore();
-      g.globalAlpha = 0.9;
-      g.fillStyle = C.white;
-      g.fillRect(x + 1, clipTop, SPRITE_W - 2, 1);
-      g.fillStyle = this.hostInk(w);
-      g.fillRect(x - 1, clipTop + 1, SPRITE_W + 2, 1);
-    }
     g.globalAlpha = 1;
-  }
-
-  hostInk(w: Worker): string {
-    const b = w.seat.block;
-    return b.zone === "cloud" ? brandInkHost(b) : brandInk(w.agent);
-  }
-
-  private drawBeam(g: CanvasRenderingContext2D, w: Worker, now: number) {
-    if (!w.tp) return;
-    const p = clamp((now - w.tp.t0) / TP_MS, 0, 1);
-    if (p <= 0) return;
-    P.beam(g, Math.round(w.x), Math.round(w.y), p, this.hostInk(w), now);
   }
 
   /** Bubbles and icons above the worker's head and monitor. */
   private drawOverhead(g: CanvasRenderingContext2D, w: Worker, now: number) {
-    if (w.alpha < 0.9 || w.leaving || w.tp) return;
+    if (w.alpha < 0.9 || w.leaving) return;
     g.globalAlpha = clamp((now - w.actSince) / 220, 0.25, 1);
     this.overhead(g, w, now);
     g.globalAlpha = 1;
@@ -1127,12 +1024,6 @@ function walkSpeed(w: Worker, pts: Pt[]): number {
   let len = 0, px = w.x, py = w.y;
   for (const p of pts) { len += Math.abs(p.x - px) + Math.abs(p.y - py); px = p.x; py = p.y; }
   return Number.isFinite(len) ? Math.max(46, len / 7) : 46;
-}
-
-/** A remote pod's host colour (the provider's brand). */
-function brandInkHost(b: Block): string {
-  const kind = b.host && b.host.kind !== "local" ? b.host.kind : "ssh";
-  return HOST_BRAND[kind]?.color ?? C.slate4;
 }
 
 /** A little megaphone with sound waves: the agent just shouted to the office. */

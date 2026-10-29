@@ -15,14 +15,14 @@
  * on a phone) joins its pod's "3 need you" chip; the raised hands say who.
  */
 import type { AgentKind } from "../../src/shared/events.ts";
-import { BRAND, HOST_BRAND } from "../../src/shared/events.ts";
+import { BRAND } from "../../src/shared/events.ts";
 import { C, mix, rgba } from "./palette.ts";
 import { FONT, fit, textBitmap } from "./font.ts";
 import { drawMark, pixelLogo, type LogoKind } from "./logos.ts";
 import type { Camera } from "./camera.ts";
 import { brandInk, type Act, type Crew, type Worker } from "./workers.ts";
 import { asciiOnly, SIGN_LOGO } from "./room.ts";
-import { MARK_STEP, tagW, type Block } from "./layout.ts";
+import { MARK_STEP, cloudLabel, type Block } from "./layout.ts";
 import { bitmap, clamp, internSummary, type Bitmap } from "./util.ts";
 
 const ACT_COL: Record<Act, string> = {
@@ -34,7 +34,7 @@ const ACT_COL: Record<Act, string> = {
 /** Short agent names for tags. */
 const SHORT: Record<string, string> = {
   claude: "Claude", commandcode: "Command", codex: "Codex", opencode: "opencode", droid: "Droid",
-  gemini: "Gemini", qwen: "Qwen", cursor: "Cursor",
+  gemini: "Gemini", qwen: "Qwen", cursor: "Cursor", copilot: "Copilot",
 };
 
 interface Box { x: number; y: number; w: number; h: number; id?: string }
@@ -107,31 +107,30 @@ export function drawLabels(g: CanvasRenderingContext2D, crew: Crew, cam: Camera,
   /* ---- pod signs: the real vector mark over the pixel one */
   for (const b of crew.layout.blocks.values()) {
     if (b.alpha < 0.3) continue;
-    const remote = b.zone === "cloud";
-    const kind = (remote && b.host && b.host.kind !== "local" ? b.host.kind : b.agent) as LogoKind;
-    const col = remote && b.host && b.host.kind !== "local" ? HOST_BRAND[b.host.kind].color : BRAND[b.agent]?.color ?? C.slate4;
+    const cloud = b.zone === "cloud";
     const [sx, sy] = cam.toScreen(b.x + SIGN_LOGO.x, b.y + SIGN_LOGO.y);
     if (sx < -200 || sy < -40 || sx > cam.vw + 20 || sy > cam.vh + 20) continue;
     // tags steer clear of the sign; moods and VIPs may still cover it
-    const marks = remote ? [] : b.mix.slice(0, 3);
-    const extra = Math.max(0, marks.length - 1) * MARK_STEP;
-    signs.push({ x: sx - 4 * z, y: sy - 3 * z, w: Math.min(b.w, 22 + [...b.label].length * 6 + tagW(b) + extra) * z, h: 14 * z });
+    const marks = b.mix.slice(0, 3);
+    const extra = cloud ? 0 : Math.max(0, marks.length - 1) * MARK_STEP;
+    signs.push({ x: sx - 4 * z, y: sy - 3 * z, w: Math.min(b.w, 22 + [...b.label].length * 6 + extra) * z, h: 14 * z });
     const size = SIGN_LOGO.size * z;
-    if (size >= 12) {
+    // the cloud-room's sign keeps its pixel cloud
+    if (size >= 12 && !cloud) {
       g.globalAlpha = 0.95 * b.alpha;
       if (marks.length > 1) {
         for (let i = marks.length - 1; i >= 0; i--) {
           const a = marks[i]!;
           g.fillStyle = "#14121c";
           g.fillRect(sx + i * MARK_STEP * z - z, sy - z, size + 2 * z, size + 2 * z);
-          drawMark(g, a, sx + i * MARK_STEP * z, sy, size, b.offline ? C.slate3 : BRAND[a]?.color ?? C.slate4);
+          drawMark(g, a, sx + i * MARK_STEP * z, sy, size, BRAND[a]?.color ?? C.slate4);
         }
-      } else drawMark(g, kind, sx, sy, size, b.offline ? C.slate3 : col);
+      } else drawMark(g, b.agent as LogoKind, sx, sy, size, BRAND[b.agent]?.color ?? C.slate4);
       g.globalAlpha = 1;
     }
   }
 
-  const ws = [...crew.workers.values()].filter((w) => !w.gone && w.alpha > 0.4 && !w.tp);
+  const ws = [...crew.workers.values()].filter((w) => !w.gone && w.alpha > 0.4);
   const crowds = new Map<Block, Worker[]>();
   for (const w of ws) {
     if (!w.intern || w.leaving) continue;
@@ -184,15 +183,12 @@ export function drawLabels(g: CanvasRenderingContext2D, crew: Crew, cam: Camera,
     for (const c of cands) if (force && !placed.some((p) => hit(p, c))) return c;
     return force ? cands[0] : null;
   };
-  /* Labels stay inside the worker's own zone (the office, or the cloud wing behind its glass). */
-  const zoneOf = (w: Worker) => {
-    const r = w.seat.block.zone === "cloud" && crew.layout.wing ? crew.layout.wing : crew.layout.main;
+  /* Labels stay inside the office. */
+  const inZone = (_w: Worker, b: Box): Box => {
+    const r = crew.layout.main;
     const [x0] = cam.toScreen(r.x + 4, 0);
     const [x1] = cam.toScreen(r.x + r.w - 4, 0);
-    return { x0: Math.max(edge, x0), x1: Math.min(cam.vw - edge, x1) };
-  };
-  const inZone = (w: Worker, b: Box): Box => {
-    const zn = zoneOf(w);
+    const zn = { x0: Math.max(edge, x0), x1: Math.min(cam.vw - edge, x1) };
     if (zn.x1 - zn.x0 < b.w) return b;
     return { ...b, x: Math.round(clamp(b.x, zn.x0, zn.x1 - b.w)) };
   };
@@ -251,7 +247,8 @@ export function drawLabels(g: CanvasRenderingContext2D, crew: Crew, cam: Camera,
     // --- the tag above the head: mood if set, else agent / role
     const mood = w.mood;
     const moodText = mood ? asciiOnly(mood.text) || (mood.emoji ? "" : mood.text) : "";
-    let name = w.intern ? (w.role || "intern") : SHORT[w.agent] ?? BRAND[w.agent]?.name ?? w.agent;
+    // in the cloud-room a worker goes by its sandbox's name, the inspector says which platform
+    let name = w.intern ? (w.role || "intern") : w.host && w.host.kind !== "local" ? cloudLabel(w.host) : SHORT[w.agent] ?? BRAND[w.agent]?.name ?? w.agent;
     if (sel || hov) name = `${w.intern ? name : BRAND[w.agent]?.name ?? name}${w.model ? " · " + shortModel(w.model) : ""}`;
     const showMood = !!mood && !flipping;
     const label = showMood && !sel && !hov ? fit(FONT(), moodText, 30 * 6) : fit(FONT(), name, sel || hov ? 40 * 6 : 16 * 6);
@@ -261,7 +258,7 @@ export function drawLabels(g: CanvasRenderingContext2D, crew: Crew, cam: Camera,
     const tagW = lead + tw + pad * 2 - (label ? 0 : fs * 2);
     const tagH = lineH + pad + (showMood ? fs * 2 : 0);
     const zoomedIn = 74 * z > 520;
-    // remote pods mix agents, so their people carry a name tag when there is room
+    // the cloud-room mixes agents and sandboxes, so its people carry a name tag when there is room
     const wantTag = !flipping && (vip || showMood || (!folded(w) && (((w.intern || w.remote) && !crowded) || zoomedIn)));
     if (wantTag && (vip || spent < budget)) {
       const lift = (w.needsHuman || (w.seated && w.act === "thinking" && !mood)) ? 20 * z : 4 * z;

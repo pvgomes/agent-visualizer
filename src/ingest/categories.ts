@@ -26,12 +26,13 @@ add("bash", `
   bash shell exec_command run_command shell_command local_shell local_shell_call write_stdin
   bash_output bashoutput killshell kill_shell taskstop taskoutput monitor monitor_command
   monitor_events shell_tasks exec wait execute run_shell_command shell_exec pty_spawn pty_write
-  pty_kill pty_list await aside_repl
+  pty_kill pty_list await aside_repl read_bash write_bash stop_bash list_bash read_powershell
+  write_powershell stop_powershell list_powershell
 `);
 add("search", `
   grep glob search find ls list read_directory read_dir list_directory list_dir list_files
   codebase_search search_files file_search toolsearch lsp semanticsearch semantic_search codesearch
-  search_file_content grep_search
+  search_file_content grep_search rg
 `);
 add("web", `
   webfetch websearch web_fetch web_search web_search_call fetch web__run web_run browser
@@ -40,13 +41,13 @@ add("web", `
 add("agent", `
   task agent explore spawn_agent wait_agent send_message sendmessage followup_task list_agents
   interrupt_agent close_agent workflow subagenthandback agent_output codebase_investigator
-  delegate_to_agent
+  delegate_to_agent read_agent search_code_subagent
 `);
 add("todo", `
   todowrite todoread todo_write todo_read update_plan exitplanmode enterplanmode exit_plan_mode
   enter_plan_mode taskcreate taskupdate tasklist taskget task_create task_update task_list
   task_get get_goal update_goal create_goal write_todos updatecurrentstep exitspecmode plan_enter
-  plan_exit
+  plan_exit update_todo
 `);
 
 export function categorize(name: string | undefined): ToolCategory {

@@ -2,7 +2,7 @@
  * `agent-visualizer --demo`: a scripted office that never runs out of work, for
  * recordings and for anyone with no agents running. It opens on the
  * arrivals: eight Claude Code and Cursor workers walk in from the elevator
- * over the first eight seconds while five more beam into the cloud wing (two
+ * over the first eight seconds while five more walk into the cloud-room (two
  * in the devops Vercel Sandbox, one each in the ai-agents and website ones,
  * and one in the incidents-check Railway sandbox), and after that people come and go every few minutes. The opening
  * is scripted on every seed: a status line at ~3s, the first table flip at
@@ -20,7 +20,7 @@ import { flipOwnTable, session, status, type Ctx, type SessionPlan } from "./scr
 import { Sim, sleep, type Handle, type Script } from "./sim.ts";
 
 export const DEFAULT_SEED = 7;
-const ALL_AGENTS: AgentKind[] = ["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor"];
+const ALL_AGENTS: AgentKind[] = ["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot"];
 /** Who works in the demo unless --agents asks for others. */
 const DEMO_AGENTS: AgentKind[] = ["claude", "cursor"];
 /** Local desks the director tries to keep filled. */
@@ -126,7 +126,7 @@ export function createDemo(opts: DemoOptions & { stamp?: (virtualMs: number) => 
       );
       if (seat.opening === "hero") hero = c;
     });
-    // Sandboxes beam in meanwhile, and live longer than a laptop session.
+    // Sandboxes join meanwhile, and live longer than a laptop session.
     const cloud = REMOTE_CAST.map((seat, i) => hire(seat, { lifetime: rng.int(10, 18), startDelay: rng.int(1_500, 3_000) }, 1_100 + i * 1_000));
     sim.spawn(beats(hero!, cloud));
     yield sleep(12_000);

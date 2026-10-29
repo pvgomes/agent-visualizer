@@ -51,6 +51,8 @@ test("every agent's TUI argv, first-run flags and prompt placement", () => {
   assert.deepEqual(L("gemini", "acceptEdits"), ["gemini", "--session-id", "S", "--approval-mode", "auto_edit", "--skip-trust", "-i", "hi"]);
   assert.deepEqual(L("qwen", "acceptEdits"), ["qwen", "--session-id", "S", "--approval-mode", "auto-edit", "-i", "hi"]);
   assert.deepEqual(L("cursor", "bypass"), ["cursor", "--force", "hi"]);
+  assert.deepEqual(L("copilot"), ["copilot", "--interactive", "hi"]);
+  assert.deepEqual(L("copilot", "bypass"), ["copilot", "--allow-all-tools", "--interactive", "hi"]);
   assert.deepEqual(L("opencode", "plan"), ["opencode", "--agent", "plan", "--prompt", "hi", "/w"]);
   const oc = terminalLaunch({ agent: "opencode", bin: "opencode", cwd: "/w", permission: "bypass", opencode: { port: 4512, password: "pw-secret" } });
   assert.deepEqual(flat(oc), ["opencode", "--port", "4512", "--hostname", "127.0.0.1", "--auto", "/w"]);
@@ -94,13 +96,14 @@ test("chat commands", () => {
 test("permission modes offered, drives and pins", () => {
   assert.deepEqual(permissionsOf("droid"), ["default"]);
   assert.deepEqual(permissionsOf("cursor"), ["default", "bypass"]);
+  assert.deepEqual(permissionsOf("copilot"), ["default", "bypass"]);
   for (const a of ["claude", "codex", "opencode", "commandcode", "gemini", "qwen"]) assert.equal(permissionsOf(a).length, 4, a);
   assert.deepEqual(driveOf("opencode"), { submit: "opencode", enterDelayMs: 0, interrupt: "opencode" });
   assert.deepEqual(driveOf("commandcode"), { submit: "paste", enterDelayMs: 600, interrupt: "esc" });
   assert.equal(pinsSessionId("claude"), "exact");
   assert.equal(pinsSessionId("gemini"), "hint");
   assert.equal(pinsSessionId("codex"), null);
-  assert.equal(AGENTS.length, 8);
+  assert.equal(AGENTS.length, 9);
 });
 
 test("versions and binaries: first on PATH wins, Cursor's `agent` only when it is Cursor's", () => {

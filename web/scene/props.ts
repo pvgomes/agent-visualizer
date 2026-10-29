@@ -1,13 +1,11 @@
 /*
  * Furniture and little things, painted pixel by pixel: desks, monitors (and
  * what is on their screens for each kind of work), chairs, the intern bench
- * and laptops, desk trinkets, plants, the water cooler, coffee machine, server
+ * and laptops, desk trinkets, plants, the coffee machine, server
  * rack, elevator, clock and the floating icons (paper airplane, globe, magnifier,
- * plug, bulb, bubbles). Furniture takes an ArtKey, so every agent brand and
- * every remote host's server pod has its own desk, chair and keyboard. Also
- * the props that fill a pod's spare rug, the cloud wing's racks, the teleport
- * beam and the pulled-plug badge. Static pieces are cached as bitmaps;
- * screens animate.
+ * plug, bulb, bubbles). Furniture takes an ArtKey, so every agent brand has
+ * its own desk, chair and keyboard. Also the props that fill a pod's spare
+ * rug. Static pieces are cached as bitmaps; screens animate.
  */
 import type { AgentKind } from "../../src/shared/events.ts";
 import { BRAND_ART, C, art, mix, rgba, type ArtKey } from "./palette.ts";
@@ -60,11 +58,6 @@ export function deskBody(key: ArtKey): Bitmap {
   if (key === "claude") { r(g, 14, 11, 8, 1, dk(front, 0.25)); }
   if (key === "commandcode") { r(g, 0, 9, DESK_W, 1, mix(C.cc2, C.cc6, 0.4)); }
   if (A.trim) r(g, 0, 10, DESK_W, 1, A.trim);
-  if (key.startsWith("host-")) {
-    // server-room desk: vent slots and a status strip
-    for (let i = 4; i < DESK_W - 4; i += 3) r(g, i, 12, 2, 1, dk(front, 0.45));
-    r(g, DESK_W - 6, 11, 3, 1, A.light);
-  }
   // outline sides
   r(g, 0, 0, 1, 14, dk(edge, 0.25)); r(g, DESK_W - 1, 0, 1, 14, dk(edge, 0.25));
   deskCache.set(k, b);
@@ -370,16 +363,6 @@ export function keyboard(g: G, x: number, y: number, artKey: ArtKey, typing: boo
 }
 
 /* ----------------------------------------------------------------- chairs */
-/** The sitter's brand mark on the chair back (who works here, even in a mixed remote pod). */
-export function chairBadge(g: G, cx: number, cy: number, agent: AgentKind) {
-  const A = BRAND_ART[agent] ?? BRAND_ART.claude;
-  // a light tint of the brand, so dark marks (Droid's orange, Codex's green) read on the plate
-  const lg = pixelLogo(agent, 7, mix(A.ink, C.white, 0.3), 0.38);
-  r(g, cx - 5, cy - 8, 11, 9, C.ink);
-  r(g, cx - 4, cy - 7, 9, 7, C.ink2);
-  g.drawImage(lg.c, cx - 3, cy - 7);
-}
-
 export function chair(g: G, cx: number, cy: number, key: ArtKey, empty: boolean) {
   const [main, acc] = art(key).chair;
   // base + wheels
@@ -525,22 +508,6 @@ export function plantSmall(g: G, x: number, y: number) {
   r(g, x - 1, y - 14, 1, 2, C.leaf4); r(g, x + 2, y - 12, 1, 2, C.leaf4);
 }
 
-export function waterCooler(g: G, x: number, y: number) {
-  // (x, y) = bottom-left, 10 wide
-  r(g, x, y - 16, 10, 16, C.white);
-  r(g, x, y - 16, 10, 1, C.slate5);
-  r(g, x + 8, y - 15, 2, 15, C.slate5);
-  r(g, x + 2, y - 11, 3, 2, C.slate3);
-  r(g, x + 3, y - 9, 1, 1, C.blue4); r(g, x + 5, y - 9, 1, 1, C.red3);
-  r(g, x, y - 1, 10, 1, C.slate4);
-  // bottle
-  r(g, x + 1, y - 27, 8, 11, C.blue5);
-  r(g, x + 2, y - 28, 6, 1, C.blue5);
-  r(g, x + 3, y - 18, 4, 2, C.blue4);
-  r(g, x + 2, y - 26, 1, 7, lt(C.blue5, 0.5));
-  r(g, x + 1, y - 22, 8, 1, C.blue4);
-}
-
 export function coffeeMachine(g: G, x: number, y: number) {
   // counter 26 wide with an espresso machine on top, (x, y) = bottom-left of the counter
   r(g, x, y - 12, 26, 12, C.wood3);
@@ -679,12 +646,29 @@ export function elevatorDoors(g: G, x: number, y: number, open: number, t: numbe
     r(g, x + 2 + inner - lw, y - ELEV_H, 1, ELEV_H, C.slate3);
     r(g, x + 3 + inner - lw, y - ELEV_H + 2, Math.max(0, lw - 3), 1, C.slate5);
   }
-  // indicator: arrow + floor number (the office is on the 21st floor)
+  // indicator: the floor the car is on, and which way it's going (here, on 21, while the doors work)
+  const here = open > 0.02 || ding > 0;
+  const { floor, dir } = here ? { floor: OFFICE_FLOOR, dir: 0 } : liftFloor(t);
   const lit = ding > 0 && Math.floor(t / 150) % 2 === 0;
   const ax = x + 13, ay = y - ELEV_H - 7;
-  const ac = lit ? C.gold3 : C.gold1;
-  r(g, ax + 1, ay, 1, 1, ac); r(g, ax, ay + 1, 3, 1, ac); r(g, ax + 1, ay + 2, 1, 2, ac);
-  drawText(g, MICRO(), "21", ax + 5, ay - 0, lit ? C.gold3 : C.red3);
+  const ac = lit ? C.gold3 : dir ? C.gold2 : C.gold1;
+  if (dir >= 0) { r(g, ax + 1, ay, 1, 1, ac); r(g, ax, ay + 1, 3, 1, ac); r(g, ax + 1, ay + 2, 1, 2, ac); }
+  else { r(g, ax + 1, ay, 1, 2, ac); r(g, ax, ay + 2, 3, 1, ac); r(g, ax + 1, ay + 3, 1, 1, ac); }
+  drawText(g, MICRO(), String(floor), ax + 5, ay - 0, lit ? C.gold3 : C.red3);
+}
+
+const OFFICE_FLOOR = 21, TOP_FLOOR = 42;
+/** One trip: TRIP_MS long, travelling a floor every FLOOR_MS (top to bottom fits), then standing still for the rest. */
+const TRIP_MS = 9_000, FLOOR_MS = 200;
+
+/** Where the car is when nobody here is using it: random trips between floors 1 and TOP_FLOOR. */
+export function liftFloor(t: number): { floor: number; dir: -1 | 0 | 1 } {
+  const k = Math.floor(t / TRIP_MS);
+  const stop = (n: number) => 1 + Math.floor(rng(n * 7919 + 11)() * TOP_FLOOR);
+  const from = stop(k), to = stop(k + 1);
+  const moved = Math.min(Math.abs(to - from), Math.floor((t - k * TRIP_MS) / FLOOR_MS));
+  const dir = moved < Math.abs(to - from) ? (Math.sign(to - from) as -1 | 1) : 0;
+  return { floor: from + Math.sign(to - from) * moved, dir };
 }
 
 /* ----------------------------------------------------------------- clock */
@@ -1053,92 +1037,15 @@ export function printer(g: G, x: number, y: number, t: number) {
   r(g, x + 12, y - 11, 2, 1, Math.floor(t / 700) % 2 ? C.green4 : C.green2);
 }
 
-export function miniCooler(g: G, x: number, y: number) {
-  // (x, y) = bottom-left, 10 wide water cooler, smaller sibling of the lobby one
-  floorShadow(g, x, y - 1, 10, 3);
-  r(g, x, y - 12, 10, 12, C.white);
-  r(g, x + 8, y - 11, 2, 11, C.slate5);
-  r(g, x + 3, y - 8, 1, 1, C.blue4); r(g, x + 5, y - 8, 1, 1, C.red3);
-  r(g, x + 1, y - 21, 8, 9, C.blue5);
-  r(g, x + 2, y - 20, 1, 7, lt(C.blue5, 0.5));
-}
-
-/** A slim server tower on a cloud pod, LEDs breathing with activity. */
-export function serverTower(g: G, x: number, y: number, t: number, col: string, on: boolean) {
-  floorShadow(g, x, y - 1, 12, 3);
-  r(g, x, y - 26, 12, 26, C.sv1);
-  r(g, x, y - 26, 12, 1, C.sv4);
-  r(g, x + 11, y - 25, 1, 25, C.sv0);
-  for (let i = 0; i < 6; i++) {
-    const uy = y - 23 + i * 4;
-    r(g, x + 2, uy, 8, 3, C.sv2);
-    const lit = on && Math.sin(t * 0.006 + i * 1.9 + x) > -0.2;
-    r(g, x + 3, uy + 1, 1, 1, lit ? col : C.sv0);
-    r(g, x + 5, uy + 1, 1, 1, lit && i % 2 ? C.green4 : C.sv0);
-  }
-}
-
 /** Draws whatever prop sits on a pod's spare rug. (x, y) = bottom-left. */
-export function podProp(g: G, kind: string, x: number, y: number, seed: number, t: number, col: string, on: boolean) {
+export function podProp(g: G, kind: string, x: number, y: number, seed: number, t: number) {
   switch (kind) {
     case "plant": plantSmall(g, x + 7, y); return;
     case "cabinet": filingCabinet(g, x, y); return;
     case "board": whiteboard(g, x, y, seed); return;
     case "printer": printer(g, x, y, t); return;
-    case "cooler": miniCooler(g, x, y); return;
-    case "server": serverTower(g, x, y, t, col, on); return;
   }
 }
-
-/* -------------------------------------------------------------- remotes */
-
-/** Unplugged cable: shown on a remote pod whose sandbox went away. */
-export function unplugged(g: G, x: number, y: number, t: number) {
-  // (x, y) = top-left, 13 x 7
-  const blink = Math.floor(t / 600) % 2 === 0;
-  r(g, x, y + 3, 4, 1, C.slate3);
-  r(g, x + 3, y + 1, 3, 5, C.slate4); r(g, x + 3, y + 1, 3, 1, C.slate5);
-  r(g, x + 6, y + 2, 1, 1, C.slate5); r(g, x + 6, y + 4, 1, 1, C.slate5);
-  r(g, x + 9, y + 1, 1, 5, C.slate2);
-  r(g, x + 10, y + 1, 3, 5, C.slate3); r(g, x + 10, y + 1, 3, 1, C.slate4);
-  if (blink) { r(g, x + 7, y, 1, 1, C.red3); r(g, x + 8, y + 6, 1, 1, C.red3); }
-}
-
-/** The beam a remote worker materialises in. p = 0..1 through the arrival. */
-export function beam(g: G, cx: number, footY: number, p: number, col: string, t: number) {
-  const h = 46;
-  const a = p < 0.15 ? p / 0.15 : p > 0.75 ? (1 - p) / 0.25 : 1;
-  if (a <= 0) return;
-  const w = Math.round(3 + 8 * Math.sin(Math.min(1, p * 1.4) * Math.PI));
-  g.save();
-  g.globalCompositeOperation = "lighter";
-  // soft column, brighter core
-  for (let i = 0; i < h; i++) {
-    const k = 1 - i / h;
-    g.globalAlpha = a * 0.22 * k;
-    g.fillStyle = col;
-    g.fillRect(cx - w, footY - i, w * 2, 1);
-    g.globalAlpha = a * 0.5 * k;
-    g.fillStyle = C.white;
-    g.fillRect(cx - 1, footY - i, 2, 1);
-  }
-  // rising rings
-  for (let k = 0; k < 3; k++) {
-    const ph = ((t / 420 + k / 3) % 1);
-    const ry = footY - ph * h;
-    g.globalAlpha = a * (1 - ph) * 0.8;
-    g.fillStyle = col;
-    g.fillRect(cx - w - 2, Math.round(ry), w * 2 + 4, 1);
-  }
-  // landing pad ellipse
-  g.globalAlpha = a * 0.7;
-  g.fillStyle = col;
-  g.fillRect(cx - 9, footY, 18, 1);
-  g.fillRect(cx - 7, footY + 1, 14, 1);
-  g.restore();
-}
-
-/* ------------------------------------------------------ floor decor bmps */
 
 const decorCache = new Map<string, Bitmap>();
 /** Lounge furniture for floor that no pod uses, cached as a bitmap. Origin = top-left of the box. */
@@ -1182,29 +1089,3 @@ export function decorBitmap(kind: string, w: number, seed: number): { bm: Bitmap
   return { bm, oy };
 }
 
-/** A row of data-centre cabinets for the cloud wing's spare floor, LEDs live. (x, y) = top-left of the row band. */
-export function rackRow(g: G, x: number, y: number, w: number, t: number, seed: number) {
-  const CW = 16, top = y + 18, h = 40;
-  const n = Math.max(1, Math.floor((w + 2) / (CW + 2)));
-  const x0 = x + Math.floor((w - (n * (CW + 2) - 2)) / 2);
-  floorShadow(g, x0 - 1, top + h - 1, n * (CW + 2), 4, 0.4);
-  for (let i = 0; i < n; i++) {
-    const cx = x0 + i * (CW + 2);
-    r(g, cx, top, CW, h, C.sv1);
-    r(g, cx, top, CW, 2, C.sv4);
-    r(g, cx + 1, top + 2, 1, h - 3, C.sv3);
-    r(g, cx + CW - 1, top + 2, 1, h - 2, C.sv0);
-    // glass door with the units behind it
-    r(g, cx + 3, top + 4, CW - 6, h - 8, C.sv0);
-    for (let u = 0; u < 7; u++) {
-      const uy = top + 5 + u * 4;
-      r(g, cx + 4, uy, CW - 8, 3, C.sv2);
-      for (let k = 0; k < 3; k++) {
-        const ph = Math.sin(t * 0.003 * (1 + ((i * 3 + u + k + seed) % 5) * 0.4) + i * 2.1 + u * 1.3 + k);
-        const col = k === 2 ? C.gold3 : (seed + i + u) % 4 === 0 ? C.cyan3 : C.green4;
-        r(g, cx + 5 + k * 2, uy + 1, 1, 1, ph > 0.1 ? col : C.sv1);
-      }
-    }
-    r(g, cx + CW - 5, top + h - 3, 2, 1, C.cyan3);
-  }
-}

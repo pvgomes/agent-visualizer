@@ -1,5 +1,5 @@
-// Tests for the parsers of the newer agents (src/ingest/droid.ts, qwen.ts, cursor.ts, gemini.ts, opencode.ts)
-// on the synthetic fixtures in test/fixtures/{droid,qwen,cursor,gemini} and hand-built opencode rows.
+// Tests for the parsers of the newer agents (src/ingest/droid.ts, qwen.ts, cursor.ts, gemini.ts, opencode.ts, copilot.ts)
+// on the synthetic fixtures in test/fixtures/{droid,qwen,cursor,gemini,copilot} and hand-built opencode rows.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -26,7 +26,7 @@ async function load(...entries) {
 }
 
 const P = await load(
-  "src/ingest/droid.ts", "src/ingest/qwen.ts", "src/ingest/cursor.ts", "src/ingest/gemini.ts", "src/ingest/opencode.ts",
+  "src/ingest/droid.ts", "src/ingest/qwen.ts", "src/ingest/cursor.ts", "src/ingest/gemini.ts", "src/ingest/opencode.ts", "src/ingest/copilot.ts",
   "src/ingest/discover.ts", "src/shared/events.ts",
 );
 
@@ -73,6 +73,70 @@ test("droid: settings growth adds only the difference; interrupts are errors", (
   const evs = P.parseDroidLine(st, JSON.stringify({ type: "message", timestamp: "2026-01-15T10:00:00Z", message: { role: "user", content: [{ type: "text", text: "Request interrupted by user" }] } }));
   assert.deepEqual(kinds(evs), ["session_start", "error"]);
   assert.equal(evs[1].summary, "Interrupted");
+});
+
+/* ---------------------------------------------------------------- copilot */
+
+const CPID = "c0000000-1111-4222-8333-666666666666";
+const COPILOT = `copilot/session-state/${CPID}/events.jsonl`;
+
+test("copilot: tools, exit codes, a subagent intern, MCP, reply and waiting, ask_user, error, shutdown", () => {
+  const st = P.createCopilotState({ sessionId: CPID });
+  const evs = run((l) => P.parseCopilotLine(st, l), COPILOT);
+  // Nothing from a prompt, a reply, a file, a pattern or a tool argument leaks into an event.
+  assert.doesNotMatch(JSON.stringify(evs), /SECRET_NEEDLE|hunter2|ghp_/);
+  assert.ok(SUMMARY_OK(evs));
+  const main = evs.filter((e) => !e.parentId);
+  for (const e of main) assert.equal(e.workerId, CPID);
+  assert.equal(main[0].kind, "session_start");
+  assert.equal(main[0].cwd, "/tmp/demo-app");
+  assert.equal(main[0].project, "demo-app");
+  assert.equal(main[0].model, "claude-sonnet-5.5", "auto mode resolves to the model it picked");
+  // Only the human's prompts, never a subagent's brief or the system prompt.
+  assert.equal(of(evs, "prompt").length, 2);
+  const starts = of(main, "tool_start");
+  // report_intent is bookkeeping, not work.
+  assert.deepEqual(starts.map((e) => e.summary), ["$ npm test", "Read login.ts", "Edit login.ts", "Spawn explore", "github · get_issue", "$ npm test", "Question for you"]);
+  assert.deepEqual(starts.map((e) => e.category), ["bash", "read", "edit", "agent", "mcp", "bash", "other"]);
+  // Exit code 1 fails the first run even though the tool call itself succeeded; the second passes.
+  assert.deepEqual(kinds(evs).filter((k) => k.startsWith("test_")), ["test_fail", "test_pass"]);
+  // The failed edit is an error on its tool_end.
+  assert.equal(of(main, "tool_end").find((e) => e.summary === starts[2].summary).isError, true);
+  // The subagent is an intern for as long as it runs, doing its own tool calls.
+  const intern = evs.filter((e) => e.parentId === CPID);
+  assert.equal(intern[0].kind, "subagent_start");
+  assert.equal(intern[0].role, "Explore Agent");
+  assert.ok(intern.some((e) => e.kind === "tool_start" && e.category === "search"));
+  assert.equal(intern.at(-1).kind, "subagent_end");
+  // A reply with no tool calls, then its turn_end: the human's turn. ask_user also waits on them.
+  const k = kinds(main);
+  assert.deepEqual(k.slice(k.indexOf("reply"), k.indexOf("reply") + 2), ["reply", "waiting"]);
+  assert.ok(main.some((e) => e.kind === "waiting" && e.summary === "Needs you"));
+  assert.equal(of(main, "error").length, 1);
+  assert.equal(main.at(-1).kind, "session_end", "a clean shutdown sends it home");
+  assert.equal(evs.reduce((n, e) => n + (e.tokens ?? 0), 0), 1200);
+});
+
+test("copilot: a resumed session comes back after its shutdown", () => {
+  const st = P.createCopilotState({ sessionId: "s" });
+  const line = (type, data) => JSON.stringify({ type, data, timestamp: "2026-01-15T10:00:00Z" });
+  P.parseCopilotLine(st, line("session.start", { context: { cwd: "/w/app" } }));
+  assert.deepEqual(kinds(P.parseCopilotLine(st, line("user.message", { content: "hi" }))), ["session_start", "prompt"]);
+  assert.deepEqual(kinds(P.parseCopilotLine(st, line("session.shutdown", {}))), ["session_end"]);
+  P.parseCopilotLine(st, line("session.resume", { context: { cwd: "/w/app" } }));
+  assert.deepEqual(kinds(P.parseCopilotLine(st, line("assistant.turn_start", {}))), ["session_start", "thinking"]);
+});
+
+test("copilot: discovery finds <id>/events.jsonl under session-state and nothing else", () => {
+  const roots = P.agentRoots("copilot", { home: "/h", vars: {} });
+  assert.deepEqual(roots, ["/h/.copilot/session-state"]);
+  assert.deepEqual(P.agentRoots("copilot", { home: "/h", vars: { COPILOT_HOME: "/c" } }), ["/c/session-state"]);
+  const d = P.DRIVERS.copilot;
+  const f = (p) => d.classify("/r", { path: p, size: 1, mtimeMs: 1, ino: 1 });
+  assert.equal(f(`/r/${CPID}/events.jsonl`)?.agent, "copilot");
+  assert.equal(f(`/r/${CPID}/checkpoints/events.jsonl`), null);
+  assert.equal(f("/r/not-a-session/events.jsonl"), null);
+  assert.equal(f(`/r/${CPID}/other.jsonl`), null);
 });
 
 /* ------------------------------------------------------------------- qwen */

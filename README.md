@@ -9,7 +9,7 @@ Your coding agents as little workers in a pixel-art office, on the 21st floor in
 
 Every Claude Code, Codex, Cursor or other agent session you run gets a desk. You can see at a glance who is working, who is waiting on you, and who just broke the tests.
 
-![The Rio office at sunset: desks for each project, the cloud wing for sandboxes, Sugarloaf and Christ the Redeemer through the glass, a passer-by in the Brazil kit and the live activity feed](docs/rio-office.png)
+![The Rio office: desks for each project, the glass cloud-room for sandboxes, Sugarloaf and Christ the Redeemer through the glass, a passer-by in the Brazil kit and the live activity feed](docs/office-rio.png)
 
 ## Use
 
@@ -41,12 +41,13 @@ Your browser opens `http://127.0.0.1:4747`. Start an agent in any terminal and i
 
 ![Change location: Rio de Janeiro, Dubai, London, New York, Tokyo and Warsaw, each with a live postcard of its view and its local time](docs/locations.png)
 
-Works with Claude Code, Codex, Command Code, opencode, Cursor, Droid, Qwen Code and Gemini CLI.
+Works with Claude Code, Codex, Command Code, opencode, Cursor (the editor and cursor-agent), GitHub Copilot (VS Code and the Copilot CLI), Droid, Qwen Code and Gemini CLI. Agents running inside your editor show up just like the ones in a terminal.
 
 ## More
 
 - **Add agent** on the page starts an agent from the office and gives you its terminal.
 - `agent-visualizer install` lets your agents talk to the office (an MCP server and a skill); `agent-visualizer uninstall` removes it.
+- `agent-visualizer --name "Paulo"` puts your name on the office TV.
 - `agent-visualizer --help` lists every option, for example `--port`, `--no-open` or `--no-control` (watch only).
 
 Everything runs on your machine. The page shows labels like "Read router.ts", never your prompts, file contents or keys.

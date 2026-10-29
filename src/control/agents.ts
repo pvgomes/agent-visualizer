@@ -60,6 +60,7 @@ export const PERMISSION_FLAGS: Record<AgentKind, PermissionFlags> = {
     bypass: ["--approval-mode", "yolo"],
   },
   cursor: { default: [], bypass: ["--force"] },
+  copilot: { default: [], bypass: ["--allow-all-tools"] },
 };
 
 /**
@@ -84,6 +85,7 @@ export const CODEX_POLICY: Record<PermissionMode, { approvalPolicy: string; sand
 const PERMISSION_NOTES: Partial<Record<AgentKind, string>> = {
   droid: "Droid starts in its own default mode; switch modes in its terminal.",
   cursor: "Cursor starts in its default mode, or with --force for bypass.",
+  copilot: "Copilot asks before tools by default, or runs with --allow-all-tools for bypass.",
 };
 
 export function permissionsOf(agent: AgentKind): PermissionMode[] {
@@ -230,6 +232,10 @@ export function terminalLaunch(o: TerminalLaunchOptions): Launch {
     case "cursor":
       argv.push(...flags);
       if (prompt !== undefined) argv.push(prompt);
+      break;
+    case "copilot":
+      argv.push(...flags);
+      if (prompt !== undefined) argv.push("--interactive", prompt);
       break;
   }
   return { argv, cwd: o.cwd, env, secret, ...(o.path?.length ? { path: o.path } : {}) };

@@ -257,6 +257,14 @@ export const TOOLSETS: Record<AgentKind, Toolset> = {
     web: ["web_search"],
     todoSummary: "Update todos",
   },
+  copilot: {
+    tools: {
+      read: "view", edit: "edit", write: "create", bash: "bash", search: "rg",
+      glob: "glob", web: "web_fetch", agent: "task", todo: "update_todo",
+    },
+    web: ["web_fetch", "web_search"],
+    todoSummary: "Update todos",
+  },
 };
 
 export const MODELS: Record<AgentKind, string[]> = {
@@ -268,6 +276,7 @@ export const MODELS: Record<AgentKind, string[]> = {
   gemini: ["gemini-3-pro", "gemini-3-flash"],
   qwen: ["qwen3.5-coder-plus", "qwen3-coder-flash"],
   cursor: ["composer-2", "claude-sonnet-5-5"],
+  copilot: ["claude-sonnet-5.5", "gpt-5.5"],
 };
 
 /** MCP calls as [server, tool]; summaries read "github.get_issue". */

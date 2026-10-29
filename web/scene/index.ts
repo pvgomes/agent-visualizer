@@ -9,7 +9,7 @@
 import type { CreateOfficeScene, OfficeEvent, OfficeScene, Snapshot } from "../contract.ts";
 import { C, rgba } from "./palette.ts";
 import { Crew, brandInk, type DrawCall } from "./workers.ts";
-import { Cat } from "./cat.ts";
+import { Visitors } from "./visitors.ts";
 import { Kicker } from "./kicker.ts";
 import { Sky, skyAt, weatherToday, type Weather } from "./sky.ts";
 import { DEFAULT_CITY, cityDate, cityHour, cityOf, type CityId } from "../cities.ts";
@@ -20,7 +20,7 @@ import { Crt } from "./crt.ts";
 import * as R from "./room.ts";
 import * as P from "./props.ts";
 import { DESK_W, POD_H, WALL_H, deskTop } from "./layout.ts";
-import { BRAND, HOST_BRAND } from "../../src/shared/events.ts";
+import { BRAND } from "../../src/shared/events.ts";
 import { FONT, fit, textBitmap } from "./font.ts";
 import { drawMark } from "./logos.ts";
 import { bitmap, clamp, ctx2d, makeCanvas, type Bitmap } from "./util.ts";
@@ -82,7 +82,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
 
   let clock = 0;
   const crew = new Crew(() => clock);
-  const cat = new Cat();
+  const visitors = new Visitors(crew, () => plan.coffee);
   const kicker = new Kicker();
   const sky = new Sky(7);
   const lighting = new Lighting();
@@ -101,7 +101,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
   // the world buffer and its cached static layer
   let layoutVersion = -1;
   let room = crew.layout.room();
-  let plan = R.plan(crew.layout.main, crew.layout.wing, room);
+  let plan = R.plan(crew.layout.main, room);
   let origin = { x: 0, y: 0 };
   let size = { w: 1, h: 1 };
   let world: Bitmap = bitmap(1, 1);
@@ -112,7 +112,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
   function rebuild() {
     layoutVersion = crew.layout.version;
     room = crew.layout.room();
-    plan = R.plan(crew.layout.main, crew.layout.wing, room);
+    plan = R.plan(crew.layout.main, room);
     origin = { x: room.x - plan.pad, y: room.y - plan.pad };
     const ns = { w: room.w + plan.pad * 2, h: room.h + plan.pad * 2 };
     if (ns.w !== size.w || ns.h !== size.h) {
@@ -193,16 +193,9 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     for (const b of crew.layout.blocks.values()) {
       if (b.alpha <= 0) continue;
       const bx = Math.round(b.x), by = Math.round(b.y);
-      if (b.zone === "cloud") {
-        // cool pools in the host colour, the platform rim glowing
-        const kind = b.host && b.host.kind !== "local" ? b.host.kind : "ssh";
-        const col = HOST_BRAND[kind].color;
-        const on = b.offline ? 0.25 : 1;
-        L.push({ x: bx + b.w / 2, y: by + b.h - 8, r: Math.max(40, Math.max(b.w, b.h) * 0.55), cut: 0.35 * night * on, color: col, glow: 0.07 * on * (0.4 + night), flat: 0.42 });
-        continue;
-      }
-      // a warm pendant pool over every desk, and one soft wash over the pod
-      L.push({ x: bx + b.w / 2, y: by + 46 + (b.h - POD_H) / 2, r: Math.max(56, Math.max(b.w, b.h) * 0.62), cut: 0.32 * night, color: C.gold2, glow: (b.agent === "commandcode" || b.agent === "cursor" ? 0.035 : 0.06) * night, flat: 0.55 });
+      // a warm pendant pool over every desk, and one soft wash over the pod (cool glass light in the cloud-room)
+      const cloud = b.zone === "cloud";
+      L.push({ x: bx + b.w / 2, y: by + 46 + (b.h - POD_H) / 2, r: Math.max(56, Math.max(b.w, b.h) * 0.62), cut: 0.32 * night, color: cloud ? C.cyan3 : C.gold2, glow: (cloud || b.agent === "commandcode" || b.agent === "cursor" ? 0.035 : 0.06) * night, flat: 0.55 });
       for (const st of b.stations) {
         if (st.hot) continue;
         L.push({ x: bx + Math.round(st.x) + DESK_W / 2, y: deskTop(b, st) + 14, r: 34, cut: 0.42 * night, color: C.gold3, glow: 0.07 * night, flat: 0.6 });
@@ -255,10 +248,6 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
         const t = now - w.show.t0;
         if (t < 700) L.push({ x: w.x, y: w.y - 20, r: 44, cut: 0.8, color: brandInk(w.agent), glow: 0.4 * (1 - t / 700) });
       }
-      if (w.tp) {
-        const t = (now - w.tp.t0) / 1100;
-        if (t > 0 && t < 1) L.push({ x: w.x, y: w.y - 14, r: 40, cut: 0.9, color: crew.hostInk(w), glow: 0.45 * Math.sin(t * Math.PI) });
-      }
     }
     // the room
     const tv = plan.tv;
@@ -269,11 +258,6 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     L.push({ x: plan.clock.x, y: plan.clock.y, r: 14, cut: 0.25 });
     // moonlight under the windows
     if (night > 0.3) for (const w of plan.windows) if (w.x < crew.layout.main.x + crew.layout.main.w) L.push({ x: w.x + w.w / 2, y: WALL_H + 16, r: Math.max(24, w.w * 0.7), cut: 0.18 * night, color: C.blue5, glow: 0.035 * night, flat: 0.35 });
-    if (plan.uplink) L.push({ x: plan.uplink.x + 4, y: plan.uplink.y - 18, r: 44, cut: 0.6, color: C.cyan3, glow: 0.12 + crew.activity() * 0.12 });
-    if (plan.wing && plan.wing.y === 0) {
-      // the wing's glass lets the sky's glow in along its floor
-      L.push({ x: plan.wing.x + plan.wing.w / 2, y: WALL_H + 10, r: Math.max(60, plan.wing.w * 0.55), cut: 0.3 * night, color: C.cyan3, glow: 0.05, flat: 0.25 });
-    }
     const op = crew.elevator.open;
     if (op > 0.02) L.push({ x: plan.elevator.doorX, y: WALL_H - 6, r: 44, cut: 0.85 * op, color: C.gold3, glow: 0.22 * op, flat: 0.8 });
     L.push({ x: plan.elevator.doorX, y: WALL_H - P.ELEV_H - 6, r: 12, cut: 0.4, color: C.red3, glow: 0.08 });
@@ -286,9 +270,8 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     return cityHour(city);
   }
 
-  /** The floor-level layer every frame: fibres, then each pod's rug and sign. */
-  function drawPods(wg: CanvasRenderingContext2D, now: number) {
-    R.drawFibres(wg, plan, crew.layout.blocks.values(), now, (b) => crew.podBusy(b));
+  /** The floor-level layer every frame: each pod's rug and sign. */
+  function drawPods(wg: CanvasRenderingContext2D) {
     for (const b of crew.layout.blocks.values()) {
       if (b.alpha <= 0) continue;
       const bm = R.podBitmap(b);
@@ -298,12 +281,8 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     wg.globalAlpha = 1;
   }
 
-  function decorCalls(calls: DrawCall[], now: number) {
+  function decorCalls(calls: DrawCall[]) {
     for (const d of crew.layout.decor) {
-      if (d.kind === "racks") {
-        calls.push({ y: d.y + 58, fn: (g) => P.rackRow(g, d.x, d.y, d.w, now, d.seed) });
-        continue;
-      }
       const { bm, oy } = P.decorBitmap(d.kind, d.w, d.seed);
       calls.push({ y: d.y + 58, fn: (g) => g.drawImage(bm.c, d.x - 4, d.y - oy + 10) });
     }
@@ -339,17 +318,13 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
       shaft(wg, w.x + 2, WALL_H, w.w - 4, len, slant, sunCol, 0.11 * st.sun);
       if (st.sun < 0.3 && st.stars > 0.3) shaft(wg, w.x + 2, WALL_H, w.w - 4, 34, slant * 0.5, C.blue5, 0.035 * st.stars);
     }
-    drawPods(wg, now);
+    drawPods(wg);
     const calls: DrawCall[] = [];
     const over: DrawCall[] = [];
     crew.draw(calls, over, now);
-    decorCalls(calls, now);
-    cat.draw(calls, now);
+    decorCalls(calls);
+    visitors.draw(calls, now);
     kicker.draw(calls, now);
-    if (plan.uplink) {
-      const u = plan.uplink;
-      calls.push({ y: u.y + 6, fn: (g) => R.drawUplink(g, plan, now, crew.activity()) });
-    }
     calls.sort((a, b) => a.y - b.y);
     for (const c of calls) c.fn(wg);
     const lights = gatherLights(now, st.sun);
@@ -449,7 +424,6 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     crew.showFx(clock, (amt) => {
       shake = Math.max(shake, amt);
       if (amt > 6) {
-        cat.startle(clock);
         hitstop = 90;
         pulseAt = performance.now();
       }
@@ -467,7 +441,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     }
     if (cut && (cam.mode !== "auto" || panelOpen || clock > cut.until || !crew.workers.has(cut.id))) cut = null;
     bars = clamp(bars + (cut && director ? 1 : -1) * dt / 350, 0, 1);
-    cat.update(dt, clock, crew.layout.main, [...crew.layout.blocks.values()]);
+    visitors.update(dtw, clock);
     kicker.update(dtw, clock, crew.layout.main, city === "rio");
     // camera
     if (clock - insetCheck > 1000) {
@@ -508,7 +482,7 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
     if (running) raf = requestAnimationFrame(frame);
   }
 
-  /** The moment worth cutting to right now, if any: a flip always; in director mode also shouts and beam-ins. */
+  /** The moment worth cutting to right now, if any: a flip always; in director mode also shouts. */
   function nextCut(): { id: string; until: number; caption: string; zoom: number } | null {
     for (const w of crew.workers.values()) {
       if (w.leaving || w.gone) continue;
@@ -520,10 +494,6 @@ export function create(mount: HTMLElement): OfficeSceneExtras {
       if (clock - w.shoutAt < 300) {
         const last = crew.board.shouts[crew.board.shouts.length - 1];
         return { id: w.id, until: clock + CUT_MS, zoom: 1.6, caption: `${who}: ${last?.text ?? "shouted"}` };
-      }
-      // beam-ins only once the opening rush is over: the arrivals are the shot then, not one pod
-      if (clock > 12_000 && w.tp && !w.tp.out && clock - w.tp.t0 < 250 && w.host && w.host.kind !== "local") {
-        return { id: w.id, until: clock + 2200, zoom: 1.6, caption: `${who} beamed in from ${HOST_BRAND[w.host.kind].name}` };
       }
     }
     return null;

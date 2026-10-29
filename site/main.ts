@@ -191,7 +191,7 @@ const wide = matchMedia("(min-width: 1100px)");
 let feedAt = 0;
 function feedText(e: OfficeEvent, remote?: string): [string, string] | null {
   switch (e.kind) {
-    case "session_start": return [remote ? `beamed into ${remote}` : "walked in", ""];
+    case "session_start": return [remote ? `joined the cloud-room from ${remote}` : "walked in", ""];
     case "session_end": return ["went home", ""];
     case "prompt": return ["got a prompt", ""];
     case "tool_start": return e.summary ? [e.summary, ""] : null;

@@ -24,7 +24,7 @@ async function load(...entries) {
   }
 }
 
-const { OfficeState, editedFiles, IDLE_MS, GONE_MS, SUMMARY_MAX, INTERN_GRACE_MS, PRESENCE_QUIET_MS, matchAgent } = await load(
+const { OfficeState, editedFiles, IDLE_MS, GONE_MS, SUMMARY_MAX, INTERN_GRACE_MS, PRESENCE_QUIET_MS, matchAgent, matchProcess } = await load(
   "src/server/state.ts",
   "src/shared/events.ts",
   "src/ingest/presence.ts",
@@ -209,6 +209,11 @@ test("a held wait (supervising) doesn't come back when a no-prompt turn starts",
   assert.equal(state.sessions()[0].status, "tool_start");
 });
 
+test("the office's name (--name) rides on the snapshot for the TV; none means none", () => {
+  assert.equal(new OfficeState({ name: "Paulo" }).snapshot().name, "Paulo");
+  assert.equal("name" in new OfficeState().snapshot(), false);
+});
+
 test("command lines map to agents; look-alikes don't", () => {
   const cases = {
     "claude": "claude",
@@ -221,6 +226,10 @@ test("command lines map to agents; look-alikes don't", () => {
     "cursor-agent": "cursor",
     "/Users/a/Library/Application Support/Cursor/User/globalStorage/anysphere.cursor-agent-worker/agent-cli/.local/bin/cursor-agent --use-system-ca /Users/a/Library/Application Support/Cursor/x.js": "cursor",
     "/Applications/Cursor.app/Contents/Frameworks/Cursor Helper (Plugin).app/Contents/MacOS/Cursor Helper (Plugin) --type=utility": null,
+    "copilot --resume": "copilot",
+    "node /usr/local/lib/node_modules/@github/copilot/npm-loader.js": "copilot",
+    "/Applications/Visual Studio Code.app/Contents/Resources/app/node_modules.asar.unpacked/@github/copilot-sdk-darwin-arm64/prebuilds/darwin-arm64/copilot-runtime --headless --stdio": "copilot",
+    "/Applications/Visual Studio Code.app/Contents/MacOS/Code .": null,
     "/usr/bin/less /tmp/claude": null,
     "/Applications/Claude.app/Contents/MacOS/Claude": null,
     "/Applications/CodexBar.app/Contents/MacOS/CodexBar": null,
@@ -228,6 +237,36 @@ test("command lines map to agents; look-alikes don't", () => {
     "grep claude": null,
   };
   for (const [args, agent] of Object.entries(cases)) assert.equal(matchAgent(args), agent, args);
+});
+
+test("an editor's agent processes are told apart from terminal ones", () => {
+  const app = (args) => matchProcess(args)?.app ?? null;
+  assert.equal(app("/Users/a/Library/Application Support/Cursor/User/globalStorage/anysphere.cursor-agent-worker/agent-cli/.local/bin/cursor-agent --use-system-ca x worker start"), true);
+  assert.equal(app("/Applications/Visual Studio Code.app/Contents/Resources/app/node_modules.asar.unpacked/@github/copilot-sdk-darwin-arm64/prebuilds/darwin-arm64/copilot-runtime --headless"), true);
+  assert.equal(app("/home/a/.vscode-server/bin/abc/node /home/a/.vscode-server/extensions/x/node_modules/@github/copilot/npm-loader.js"), true);
+  assert.equal(app("/Users/a/.local/bin/cursor-agent"), false);
+  assert.equal(app("copilot"), false);
+  assert.equal(app("/Users/a/.local/bin/claude --resume x"), false);
+});
+
+test("an editor's agent process keeps every session of its agent in its folder, or everywhere when it runs from /", () => {
+  const { state, seen, ev, advance } = office();
+  const start = (id, agent, cwd) => state.ingest(ev({ workerId: id, agent, project: cwd.split("/").pop(), cwd, kind: "session_start" }));
+  // Three Cursor chats in one window, one in a window with no worker, two Copilot chats in VS Code.
+  start("c1", "cursor", "/Users/test/Dev/app");
+  start("c2", "cursor", "/Users/test/Dev/app");
+  start("c3", "cursor", "/Users/test/Dev/app");
+  start("c4", "cursor", "/Users/test/Dev/other");
+  start("p1", "copilot", "/Users/test/Dev/app");
+  start("p2", "copilot", "/Users/test/Dev/site");
+  advance(PRESENCE_QUIET_MS);
+  state.reconcileLocal([
+    { agent: "cursor", cwd: "/Users/test/Dev/app", app: true },
+    { agent: "copilot", cwd: "/", app: true },
+  ]);
+  assert.deepEqual(seen.filter((e) => e.kind === "session_end").map((e) => e.workerId), ["c4"], "only the chat no process accounts for goes home");
+  state.reconcileLocal([]);
+  assert.deepEqual(state.sessions().map((w) => w.workerId), [], "with the editor closed they all go");
 });
 
 test("local sessions whose agent quit go home; running ones and remotes stay", () => {

@@ -40,7 +40,7 @@ export function createEmpty(opts: { onHire(): void } = { onHire: () => undefined
       h("div", { class: "empty-mark" }, mark(4)),
       title,
       body,
-      h("div", { class: "empty-agents", attrs: { "aria-hidden": "true" } }, ...(["claude", "codex", "commandcode", "opencode", "gemini", "qwen", "droid", "cursor"] as const).map((a) => logo(a))),
+      h("div", { class: "empty-agents", attrs: { "aria-hidden": "true" } }, ...(["claude", "codex", "commandcode", "opencode", "gemini", "qwen", "droid", "cursor", "copilot"] as const).map((a) => logo(a))),
       hireBox,
       hint,
       h("div", { class: "cmd" }, h("span", { class: "cmd-prompt", text: "$" }), cmd, copy),

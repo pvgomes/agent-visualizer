@@ -40,7 +40,7 @@ export const RECENT_MAX = 200;
 /** How long an intern lingers after subagent_end so the client can walk it out. */
 export const INTERN_GRACE_MS = 6_000;
 
-const AGENTS = new Set<AgentKind>(["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor"]);
+const AGENTS = new Set<AgentKind>(["claude", "commandcode", "codex", "opencode", "droid", "gemini", "qwen", "cursor", "copilot"]);
 const HOSTS = new Set<HostKind>(["local", "ssh", "daytona", "boat", "railway", "vercel"]);
 const KINDS = new Set<EventKind>([
   "session_start", "prompt", "thinking", "tool_start", "tool_end", "reply", "waiting",
@@ -73,6 +73,8 @@ export type Claimer = (e: RawEvent) => string | undefined;
 
 export interface StateOptions {
   demo?: boolean;
+  /** The office's name, for the TV (--name). */
+  name?: string;
   /** Clock in epoch ms. Defaults to Date.now. */
   now?: () => number;
   idleMs?: number;
@@ -98,6 +100,7 @@ interface Worker {
 
 export class OfficeState {
   readonly demo: boolean;
+  readonly name?: string;
   readonly startedAt: string;
   private readonly now: () => number;
   private readonly idleMs: number;
@@ -119,6 +122,7 @@ export class OfficeState {
 
   constructor(opts: StateOptions = {}) {
     this.demo = opts.demo ?? false;
+    if (opts.name) this.name = opts.name;
     this.now = opts.now ?? Date.now;
     this.idleMs = opts.idleMs ?? IDLE_MS;
     this.goneMs = opts.goneMs ?? GONE_MS;
@@ -285,16 +289,24 @@ export class OfficeState {
    * PRESENCE_QUIET_MS. Remote workers are left to the quiet timer, held and
    * placeholder workers to their process. A process whose cwd couldn't be
    * read (cwd null or empty) makes this round skip its agent entirely, since
-   * it may well be the one keeping a session alive.
+   * it may well be the one keeping a session alive. So does an editor's agent
+   * process (app: Cursor's worker, VS Code's Copilot runtime): one of them
+   * serves every chat in the window, so its folder keeps all of that agent's
+   * sessions there, and one running from "/" keeps them everywhere.
    */
-  reconcileLocal(procs: { agent: AgentKind; cwd?: string | null }[]): void {
+  reconcileLocal(procs: { agent: AgentKind; cwd?: string | null; app?: boolean }[]): void {
     const now = this.now();
     const key = (agent: AgentKind, cwd: string) => `${agent}\0${foldPrivate(cwd)}`;
     const running = new Map<string, number>();
     const blind = new Set<AgentKind>();
+    const hosted = new Set<string>();
     for (const p of procs) {
-      if (!p.cwd) {
+      if (!p.cwd || (p.app && p.cwd === "/")) {
         blind.add(p.agent);
+        continue;
+      }
+      if (p.app) {
+        hosted.add(key(p.agent, this.tilde(p.cwd)));
         continue;
       }
       const k = key(p.agent, this.tilde(p.cwd));
@@ -312,6 +324,7 @@ export class OfficeState {
     }
     const ts = new Date(now).toISOString();
     for (const [k, ws] of groups) {
+      if (hosted.has(k)) continue;
       const extra = ws.length - (running.get(k) ?? 0);
       if (extra <= 0) continue;
       ws.sort((a, b) => a.lastActive - b.lastActive);
@@ -358,6 +371,7 @@ export class OfficeState {
       version: 1,
       startedAt: this.startedAt,
       demo: this.demo,
+      ...(this.name ? { name: this.name } : {}),
       workers: [...this.workers.values()].map((w) => ({ ...w.state })),
       recent: this.recent(),
     };
